@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""filesystem.py"""
+"""filesystem.py
+
+Tools for finding Cypher files in the file system and extracting their contained
+data.
+"""
 import os
 import re
 import json
@@ -164,8 +168,7 @@ class CypherFileFinder(object):
                 ready for subsequent processing.
 
         Todo:
-            * Descend into all possible branches of directory tree
-            * Construct a list of Cypher file objects
+            * Separate out global_parameters file and data_file-s
         """
         fnames = []
         for dirpath, subdirs, files in os.walk(self.root_dir):
