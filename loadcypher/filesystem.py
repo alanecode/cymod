@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """filesystem.py"""
+import os
 import re
 import json
 
@@ -146,16 +147,16 @@ class CypherFileFinder(object):
     Args:
         root_dir (str): File system path to root directory to search for Cypher
             files.
-        cypher_extensions (:obj:`list` of :obj:`str`): A list of strings
+        cypher_extensions (:obj:`tuple` of :obj:`str`): A list of strings
             specifying file extensions which should be taken to denote a file
-            containing Cypher queries. Defaults to ['cql', 'cypher'].
+            containing Cypher queries. Defaults to ('.cql', '.cypher').
     """
 
-    def __init__(self, root_dir, cypher_extensions=['cql', 'cypher']):
+    def __init__(self, root_dir, cypher_extensions=('.cql', '.cypher')):
         self.root_dir = root_dir
-        self.cypher_extentions = cypher_extensions
+        self.cypher_extensions = cypher_extensions
 
-    def get_cypher_files():
+    def get_cypher_files(self):
         """Get all applicable Cypher files in directory hierarchy.
 
         Returns:
@@ -166,4 +167,10 @@ class CypherFileFinder(object):
             * Descend into all possible branches of directory tree
             * Construct a list of Cypher file objects
         """
-        pass
+        fnames = []
+        for dirpath, subdirs, files in os.walk(self.root_dir):
+            for x in files:
+                if x.endswith(self.cypher_extensions):
+                    fnames.append(os.path.join(dirpath, x))
+
+        return [CypherFile(f) for f in fnames]

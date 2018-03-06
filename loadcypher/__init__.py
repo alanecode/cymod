@@ -70,10 +70,14 @@ if __name__ == '__main__':
         sys.exit(1)
     """
 
-    fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/PrivateChestnutAfforestation.cql'
+    #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/PrivateChestnutAfforestation.cql'
     #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/LandCoverType.cql'
-    fname_2queries = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/queries/BenefitPathsEco.cql'
-    cfile = CypherFile(fname)
-    print(cfile.params)
-    print(cfile.queries)
+    #fname_2queries = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/queries/BenefitPathsEco.cql'
+    #cfile = CypherFile(fname)
+    #print(cfile.params)
+    #print(cfile.queries)
     #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
+    root = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher'
+    cff = CypherFileFinder(root)
+    cypher_files = cff.get_cypher_files()
+    print(cypher_files)
