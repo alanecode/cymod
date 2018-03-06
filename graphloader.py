@@ -29,8 +29,8 @@ Problem:
     also search from a root node to collect all available Cyoher files with
     respect to a specified root directory. This could be achieved using
     `cypher-shell` commands in a bash script, but `loadcypher` aims to be a
-    starting point for various problems which may arise in the future and act as
-    a one-stop-shop for Cypher loading tasks.
+    starting point for solving various problems which may arise in the future
+    and act as a one-stop-shop for Cypher loading tasks.
 
     At present I have grand designs involving the development of some tools
     to assist in the debugging of errors in the model specification by running
@@ -39,6 +39,8 @@ Problem:
 """
 import os
 import sys
+import re
+import json
 import getpass
 import argparse
 
@@ -53,19 +55,20 @@ class CypherFile(object):
     semicolon.
 
     Args:
-        filename (str)
+        filename (str): Qualified filesystem path to the Cypher file underlying
+            a CypherFile object which has been instantiated from this class.
 
     Attributes:
         query_start_clauses (:obj:`list` of :obj:`str`): Clauses which can
-            legally start a Cypher query.
+            legally start a Cypher query. These are used to discern the end of
+            a parameter specification at the beginning of a file, and the
+            beginning of the first Cypher query.
 
     getter: queries (list of strings)
     """
 
     def __init__(self, filename):
         self.filename = filename
-
-
         self.query_start_clauses = ['START', 'MATCH', 'MERGE']
 
     def _read_cypher(self):
@@ -111,34 +114,53 @@ class CypherFile(object):
         """Identify Cypher parameters at the beginning of the file string.
 
         Returns:
-            :obj:`tuple` of :obj:`str`: A tuple containing two strings: the
-                first containing Cypher parameters, the second containing
-                queries. If no parameters are found in the file, the first
-                element in the tuple will be None.
+            :obj:`tuple` of dict and str: A tuple containing a dict --
+                containing Cypher parameters -- and a string containing queries.
+                If no parameters are found in the file, the first element in the
+                tuple will be None.
         """
         dat = self._remove_comments_and_newlines()
-        opening_brace_count = 0
-        closing_brace_count = 0
-        char_num = 0
-        while char_num < len(dat):
-            if dat[char_num] == '{':
-                opening_brace_count += 1
-            elif dat[char_num] == '}':
-                closing_brace_count += 1
-                if closing_brace_count == opening_brace_count:
-                    break
+        re_prefix = r'\s*\{[\s*\S*]*\}\s*'
+        patterns = [re.compile(re_prefix+clause) for clause
+                        in self.query_start_clauses]
 
-            char_num += 1
+        for i, p in enumerate(patterns):
+            match = p.match(dat)
+            if match:
+                first_clause = self.query_start_clauses[i]
+                clause_len = len(first_clause)
+                match_len = match.end(0) - match.start(0)
+                params_end = match_len - clause_len
+                params = dat[:params_end]
+                queries = dat[params_end:]
 
-        return dat[:char_num+1], dat[char_num+1:]
+        try:
+            return json.loads(params), queries
+        except UnboundLocalError:
+            return None, dat
 
     def _parse_queries(self):
-        pass
+        """Identify individual Cypher queries.
+
+        Uses semicolons to identify the boundaries of queries within file text.
+        If no semicolon is found, a warning will be issued, and it will be
+        assumed that the file contains only one query and that the terminated
+        semicolon was omitted.
+
+        Returns:
+            dict: Parsed file contents in the form of a dictionary with a
+                structure of {params:<dict>, queries:<list of str>}
+        """
+        dat = self._extract_parameters()
+
 
 
 
 class CypherFileFinder(object):
     """Searcher to find Cypher files in the provided root directory.
+
+    Reaches outwards from a specified root directory an collects all Cypher
+    files within reach.
 
     Args:
         root_dir (str): File system path to root directory to search for Cypher
@@ -198,6 +220,7 @@ if __name__ == '__main__':
     """
 
     fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/PrivateChestnutAfforestation.cql'
+    #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/LandCoverType.cql'
     cfile = CypherFile(fname)
     dat = cfile._extract_parameters()
     print(dat)
