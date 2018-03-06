@@ -63,13 +63,32 @@ class CypherFile(object):
             legally start a Cypher query. These are used to discern the end of
             a parameter specification at the beginning of a file, and the
             beginning of the first Cypher query.
+        _cached_data (dict): Data cache used to avoid the need to re-read each
+            time we use a CypherFile object to access data. Stores a dict of the
+            structure {'params':<dict>, 'queries':<list of strings>}.
 
-    getter: queries (list of strings)
     """
 
     def __init__(self, filename):
         self.filename = filename
         self.query_start_clauses = ['START', 'MATCH', 'MERGE']
+        self._cached_data = None
+
+    @property
+    def params(self):
+        """dict: Cypher parameters identified in file."""
+        if not(self._cached_data):
+            self._cached_data = self._parse_queries()
+
+        return self._cached_data['params']
+
+    @property
+    def queries(self):
+        """list of str: Cypher queries identified in file."""
+        if not(self._cached_data):
+            self._cached_data = self._parse_queries()
+
+        return self._cached_data['queries']
 
     def _read_cypher(self):
         """Read entire (unprocessed) Cypher file.
@@ -143,18 +162,20 @@ class CypherFile(object):
         """Identify individual Cypher queries.
 
         Uses semicolons to identify the boundaries of queries within file text.
-        If no semicolon is found, a warning will be issued, and it will be
-        assumed that the file contains only one query and that the terminated
-        semicolon was omitted.
+        If no semicolon is found it will be assumed that the file contains only
+        one query and that the terminating semicolon was omitted.
 
         Returns:
             dict: Parsed file contents in the form of a dictionary with a
                 structure of {params:<dict>, queries:<list of str>}
         """
         dat = self._extract_parameters()
-
-
-
+        queries = dat[1]
+        # only include non-empty strings in results (prevents whitespace at
+        # end of file getting an element on its own).
+        queries_list = [q + ';' for q in queries.split(';')
+                            if q.replace(' ', '')]
+        return {'params':dat[0], 'queries':queries_list}
 
 class CypherFileFinder(object):
     """Searcher to find Cypher files in the provided root directory.
@@ -221,9 +242,13 @@ if __name__ == '__main__':
 
     fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/PrivateChestnutAfforestation.cql'
     #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/LandCoverType.cql'
-    cfile = CypherFile(fname)
-    dat = cfile._extract_parameters()
-    print(dat)
+    fname_2queries = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/queries/BenefitPathsEco.cql'
+    cfile = CypherFile(fname_2queries)
+    print(cfile.params)
+    print(cfile.queries)
+
+
+
 
 
     #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
