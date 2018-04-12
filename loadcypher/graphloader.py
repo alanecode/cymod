@@ -24,7 +24,7 @@ class GraphLoader(object):
         self.global_param_file = global_param_file
         self.global_params = self._load_global_params()
         self.graph = self._get_graph(hostname, username, password)
-        self.cypher_files = self._get_cypher_files(root_dir, fname_suffix)
+        self.cypher_files = self._get_sorted_cypher_files(self._get_cypher_files(root_dir, fname_suffix))
 
     def _load_global_params(self):
         """Read global parameters from instance's global_param_file.
@@ -73,10 +73,30 @@ class GraphLoader(object):
 
         TODO: method contents
         """
-        pass
+        def get_priority_number(cypher_file, max_priority):
+            """Return numerical value to sort cypher file priorities.
+
+            If no priority is specified for a cypher file, its `priority`
+            attribute will be None. To account for this when sorting, all
+            files which have not been given a priority are given the same
+            `max_priority` value. In practice this can always be safely set to
+            the total number of files.
+
+            Files are sorted so highest priority files are at the end of the
+            resulting list, i.e. are at the top of the stack.
+            """
+            p = cypher_file.priority
+            if isinstance(p, int):
+                return p
+            else:
+                return max_priority
+
+        n = len(unsorted_cypher_files)
+        return sorted(unsorted_cypher_files,
+                key=lambda f: get_priority_number(f, n), reverse=True)
 
     def _load_cypher_query(self, sorted_cypher_files):
-        """Load an infividual cypher query into the graph.
+        """Load an individual cypher query into the graph.
 
         use py2neo Graph.run method using paramaters
         http://py2neo.org/v3/database.html#py2neo.database.Graph.run

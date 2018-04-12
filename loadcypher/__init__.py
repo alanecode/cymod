@@ -72,3 +72,4 @@ if __name__ == '__main__':
     print(gl.graph)
     for f in gl.cypher_files:
         print(f.filename)
+        print(f.priority)

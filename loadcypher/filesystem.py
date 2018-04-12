@@ -47,7 +47,7 @@ class CypherFile(object):
     def priority(self):
         """int: Priority with which queries in file should be loaded."""
         try:
-            return self.params['priority']
+            return int(self.params['priority'])
         except TypeError:
             # case where priority is not specified in file
             return None
