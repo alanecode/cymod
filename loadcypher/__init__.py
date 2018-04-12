@@ -77,7 +77,10 @@ if __name__ == '__main__':
     #print(cfile.params)
     #print(cfile.queries)
     #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
-    root = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher'
+    root = '/home/andrew/Dropbox/phd/models/GredosModel/views'
     cff = CypherFileFinder(root)
     cypher_files = cff.get_cypher_files()
-    print(cypher_files)
+    test_file = cypher_files[2]
+    print(test_file.filename)
+    print(test_file.queries)
+    
