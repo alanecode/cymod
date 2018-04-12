@@ -71,7 +71,8 @@ class GraphLoader(object):
 
         Priority 0 files should be at the top of the stack.
 
-        TODO: method contents
+        TODO: method contents. MOVE FUNCTIONALITY OF SORTING FILES BY PRIORITY
+        TO THE CypherFileFinder CLASS
         """
         def get_priority_number(cypher_file, max_priority):
             """Return numerical value to sort cypher file priorities.
@@ -95,10 +96,20 @@ class GraphLoader(object):
         return sorted(unsorted_cypher_files,
                 key=lambda f: get_priority_number(f, n), reverse=True)
 
-    def _load_cypher_query(self, sorted_cypher_files):
+    def _load_cypher_query(self, cypher_file, global_params):
         """Load an individual cypher query into the graph.
 
         use py2neo Graph.run method using paramaters
         http://py2neo.org/v3/database.html#py2neo.database.Graph.run
 
         """
+
+    def load_cypher(self):
+        """Load Cypher files into the graph.
+
+        """
+        # do I need a copy of the list? Could be regenerated from files
+        files = list(self.cypher_files)
+        while files:
+            f = files.pop()
+            self._load_cypher_query(f, self.global_params)
