@@ -48,6 +48,15 @@ class CypherFile(object):
         return self._cached_data['params']
 
     @property
+    def priority(self):
+        """int: Priority with which queries in file should be loaded."""
+        try:
+            return self.params['priority']
+        except TypeError:
+            # case where priority is not specified in file
+            return None
+
+    @property
     def queries(self):
         """list of str: Cypher queries identified in file."""
         if not(self._cached_data):
