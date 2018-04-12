@@ -85,7 +85,7 @@ if __name__ == '__main__':
     print(len(cypher_files))
     for f in cypher_files:
         print(f.filename.split('/')[-1])
-        print(f.params)
+        print(f.priority)
         print('\n')
 
 
