@@ -57,9 +57,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     print('Running graphloader')
-    pwd = getpass.getpass('Enter neo4j password:')
+
 
     """
+    pwd = getpass.getpass('Enter neo4j password:')
     try:
         graph = Graph(host=args.host, password=pwd)
 
@@ -78,9 +79,15 @@ if __name__ == '__main__':
     #print(cfile.queries)
     #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
     root = '/home/andrew/Dropbox/phd/models/GredosModel/views'
-    cff = CypherFileFinder(root)
+    cff = CypherFileFinder(root, fname_suffix='_w')
     cypher_files = cff.get_cypher_files()
     test_file = cypher_files[2]
-    print(test_file.filename)
-    print(test_file.queries)
-    
+    print(len(cypher_files))
+    for f in cypher_files:
+        print(f.filename.split('/')[-1])
+        print(f.params)
+        print('\n')
+
+
+    #print(test_file.filename)
+    #print(test_file.queries[0])
