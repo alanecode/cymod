@@ -9,10 +9,6 @@ import os
 import re
 import json
 
-from py2neo import Graph
-from httpstream.http import ClientError
-from py2neo.database.http import Unauthorized
-
 class CypherFile(object):
     """An individual file containing Cypher queries.
 
