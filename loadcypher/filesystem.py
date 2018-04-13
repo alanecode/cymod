@@ -9,10 +9,6 @@ import os
 import re
 import json
 
-from py2neo import Graph
-from httpstream.http import ClientError
-from py2neo.database.http import Unauthorized
-
 class CypherFile(object):
     """An individual file containing Cypher queries.
 
@@ -36,7 +32,7 @@ class CypherFile(object):
 
     def __init__(self, filename):
         self.filename = filename
-        self.query_start_clauses = ['START', 'MATCH', 'MERGE']
+        self.query_start_clauses = ['START', 'MATCH', 'MERGE', 'CREATE']
         self._cached_data = None
 
     @property
@@ -46,6 +42,15 @@ class CypherFile(object):
             self._cached_data = self._parse_queries()
 
         return self._cached_data['params']
+
+    @property
+    def priority(self):
+        """int: Priority with which queries in file should be loaded."""
+        try:
+            return int(self.params['priority'])
+        except TypeError:
+            # case where priority is not specified in file
+            return None
 
     @property
     def queries(self):
@@ -154,11 +159,17 @@ class CypherFileFinder(object):
         cypher_extensions (:obj:`tuple` of :obj:`str`): A list of strings
             specifying file extensions which should be taken to denote a file
             containing Cypher queries. Defaults to ('.cql', '.cypher').
+        fname_suffix (str): Suffix at the end of file names (excluding file
+            extension) which indicates file should be loaded into the database.
+            e.g. if files ending '_w.cql' should be loaded, use
+            fname_suffix='_w'. Defaults to None.
     """
 
-    def __init__(self, root_dir, cypher_extensions=('.cql', '.cypher')):
+    def __init__(self, root_dir, cypher_extensions=['.cql', '.cypher'],
+        fname_suffix=None):
         self.root_dir = root_dir
         self.cypher_extensions = cypher_extensions
+        self.fname_suffix = fname_suffix
 
     def get_cypher_files(self):
         """Get all applicable Cypher files in directory hierarchy.
@@ -167,13 +178,17 @@ class CypherFileFinder(object):
             :obj:`list` of :obj:`CypherFile`: A list of Cypher file objects
                 ready for subsequent processing.
 
-        Todo:
-            * Separate out global_parameters file and data_file-s
         """
         fnames = []
         for dirpath, subdirs, files in os.walk(self.root_dir):
-            for x in files:
-                if x.endswith(self.cypher_extensions):
-                    fnames.append(os.path.join(dirpath, x))
+            for f in files:
+                if f.endswith(tuple(self.cypher_extensions)):
+                    if self.fname_suffix:
+                        test_suffix = f.split('.')[0][-len(self.fname_suffix):]
+                        if test_suffix == self.fname_suffix:
+                            fnames.append(os.path.join(dirpath, f))
+                    else:
+                        # if no fname_suffix specified, all all cypher files
+                        fnames.append(os.path.join(dirpath, f))
 
         return [CypherFile(f) for f in fnames]
