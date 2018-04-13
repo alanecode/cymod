@@ -9,10 +9,6 @@ import os
 import re
 import json
 
-from py2neo import Graph
-from httpstream.http import ClientError
-from py2neo.database.http import Unauthorized
-
 class CypherFile(object):
     """An individual file containing Cypher queries.
 
@@ -51,7 +47,7 @@ class CypherFile(object):
     def priority(self):
         """int: Priority with which queries in file should be loaded."""
         try:
-            return self.params['priority']
+            return int(self.params['priority'])
         except TypeError:
             # case where priority is not specified in file
             return None

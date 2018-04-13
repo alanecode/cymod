@@ -43,6 +43,7 @@ import getpass
 import argparse
 
 from filesystem import CypherFileFinder, CypherFile
+from graphloader import GraphLoader
 
 if __name__ == '__main__':
     intro_string = ('Process cypher (graph database) query files and load ' +
@@ -50,44 +51,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=intro_string)
     parser.add_argument('--host', default='localhost', type=str,
                 help='database hostname')
+    parser.add_argument('-u', '--username', default='neo4j',
+                help='username for Neo4j database connection')
     parser.add_argument('-d', '--directory', default=os.getcwd(),
                 help='root of directories to search')
     parser.add_argument('-p', '--parameters',
-                help='cypher parameters to use with queries')
+                help='JSON file containing cypher parameters to use with all queries')
 
     args = parser.parse_args()
     print('Running graphloader')
-
-
-    """
     pwd = getpass.getpass('Enter neo4j password:')
-    try:
-        graph = Graph(host=args.host, password=pwd)
 
-    except (KeyError, ClientError, Unauthorized) as e:
-        print('Could not load graph. Check password.', file=sys.stderr)
-        print('Exception: %s' % str(e), file=sys.stderr)
-
-        sys.exit(1)
-    """
-
-    #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/PrivateChestnutAfforestation.cql'
-    #fname = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/LandCoverType.cql'
-    #fname_2queries = '/home/andrew/Dropbox/phd/models/GredosModel/database/cypher/queries/BenefitPathsEco.cql'
-    #cfile = CypherFile(fname)
-    #print(cfile.params)
-    #print(cfile.queries)
     #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
     root = '/home/andrew/Dropbox/phd/models/GredosModel/views'
-    cff = CypherFileFinder(root, fname_suffix='_w')
-    cypher_files = cff.get_cypher_files()
-    test_file = cypher_files[2]
-    print(len(cypher_files))
-    for f in cypher_files:
-        print(f.filename.split('/')[-1])
-        print(f.priority)
-        print('\n')
+    param_file='/home/andrew/Dropbox/phd/models/GredosModel/global_parameters.json'
 
-
-    #print(test_file.filename)
-    #print(test_file.queries[0])
+    gl = GraphLoader(hostname=args.host, username='andrew', password=pwd,
+            root_dir=root, fname_suffix='_w', global_param_file=param_file,
+            refresh_graph=True)
+    print(gl.global_params)
+    print(gl.graph)
+    gl.load_cypher()
