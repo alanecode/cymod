@@ -70,6 +70,4 @@ if __name__ == '__main__':
             root_dir=root, fname_suffix='_w', global_param_file=param_file)
     print(gl.global_params)
     print(gl.graph)
-    for f in gl.cypher_files:
-        print(f.filename)
-        print(f.priority)
+    gl.load_cypher()

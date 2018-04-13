@@ -9,7 +9,9 @@ Checks the database for the existence of nodes with the same global Parameters
 and carries out some user defined behaviour, e.g. append or remove and replace
 """
 import sys
+import os
 import json
+import time
 
 from py2neo import Graph
 from httpstream.http import ClientError
@@ -96,20 +98,25 @@ class GraphLoader(object):
         return sorted(unsorted_cypher_files,
                 key=lambda f: get_priority_number(f, n), reverse=True)
 
-    def _load_cypher_query(self, cypher_file, global_params):
-        """Load an individual cypher query into the graph.
-
-        use py2neo Graph.run method using paramaters
-        http://py2neo.org/v3/database.html#py2neo.database.Graph.run
-
-        """
+    def _load_cypher_file_queries(self, cypher_file, global_params):
+        """Load all queries in an individual cypher file into the graph."""
+        if cypher_file.params:
+            params = cypher_file.params.copy()
+        else:
+            params = {}
+        params.update(self.global_params)
+        for q in cypher_file.queries:
+            self.graph.run(q, params)
 
     def load_cypher(self):
-        """Load Cypher files into the graph.
-
-        """
-        # do I need a copy of the list? Could be regenerated from files
+        """Load all Cypher files into the graph."""
+        # Creating a copy of the cypher files list avoids side effect of erasing
+        # list of files to be loaded during the course of loading
         files = list(self.cypher_files)
+        num_files = len(files)
         while files:
             f = files.pop()
-            self._load_cypher_query(f, self.global_params)
+            print('loading '+os.path.basename(f.filename))
+            self._load_cypher_file_queries(f, self.global_params)
+
+        print('\nFinished loading {0} Cypher files'.format(num_files))
