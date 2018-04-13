@@ -67,7 +67,8 @@ if __name__ == '__main__':
     param_file='/home/andrew/Dropbox/phd/models/GredosModel/global_parameters.json'
 
     gl = GraphLoader(hostname=args.host, username='andrew', password=pwd,
-            root_dir=root, fname_suffix='_w', global_param_file=param_file)
+            root_dir=root, fname_suffix='_w', global_param_file=param_file,
+            refresh_graph=True)
     print(gl.global_params)
     print(gl.graph)
     gl.load_cypher()

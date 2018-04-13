@@ -22,11 +22,12 @@ from filesystem import CypherFile, CypherFileFinder
 class GraphLoader(object):
 
     def __init__(self, hostname, username, password, root_dir, fname_suffix,
-            global_param_file=None):
+            global_param_file=None, refresh_graph=False):
         self.global_param_file = global_param_file
         self.global_params = self._load_global_params()
         self.graph = self._get_graph(hostname, username, password)
         self.cypher_files = self._get_sorted_cypher_files(self._get_cypher_files(root_dir, fname_suffix))
+        self.refresh_graph = refresh_graph
 
     def _load_global_params(self):
         """Read global parameters from instance's global_param_file.
@@ -107,6 +108,20 @@ class GraphLoader(object):
         params.update(self.global_params)
         for q in cypher_file.queries:
             self.graph.run(q, params)
+        
+    def _refresh_graph(self):
+        """Delete nodes in the graph with the global parameters of this model.
+
+        For cases where we want to update the model specified by the combination
+        of global parameters specified in self.global_param_file with new data
+        it is necessary to first delete existing data matching those parameters.
+
+        This method will run an appropriate query to refresh thee graph ahead
+        of loading new data.
+        """
+        q = 'MATCH (n) WHERE n.project=$project AND n.model_ID=$model_ID DETACH DELETE n'
+        print('Removing existing nodes matching global parameters')
+        self.graph.run(q, self.global_params)
 
     def load_cypher(self):
         """Load all Cypher files into the graph."""
@@ -114,6 +129,9 @@ class GraphLoader(object):
         # list of files to be loaded during the course of loading
         files = list(self.cypher_files)
         num_files = len(files)
+        if self.refresh_graph:
+            self._refresh_graph()
+
         while files:
             f = files.pop()
             print('loading '+os.path.basename(f.filename))
