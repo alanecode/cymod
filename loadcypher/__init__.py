@@ -42,7 +42,6 @@ import sys
 import getpass
 import argparse
 
-from filesystem import CypherFileFinder, CypherFile
 from graphloader import GraphLoader
 
 if __name__ == '__main__':
@@ -50,25 +49,26 @@ if __name__ == '__main__':
                     'into specified neo4j database.')
     parser = argparse.ArgumentParser(description=intro_string)
     parser.add_argument('--host', default='localhost', type=str,
-                help='database hostname')
+        help='database hostname')
     parser.add_argument('-u', '--username', default='neo4j',
-                help='username for Neo4j database connection')
+        help='username for Neo4j database connection')
     parser.add_argument('-d', '--directory', default=os.getcwd(),
-                help='root of directories to search')
+        help='root of directories to search')
     parser.add_argument('-p', '--parameters',
-                help='JSON file containing cypher parameters to use with all queries')
+        help='JSON file containing cypher parameters to use with all queries')
+    parser.add_argument('-s', '--suffix',
+        help='Identifier at end of file name (before file exension) indicating cypher file should be loaded')
+    parser.add_argument('-r', '--refresh', action='store_true',
+        help='Delete previously stored data in database with matching global parameters before loading')
 
     args = parser.parse_args()
-    print('Running graphloader')
+    print('running loadcypher')
     pwd = getpass.getpass('Enter neo4j password:')
 
-    #print(graph.run("UNWIND range(1, 10) AS n RETURN n, n * n as n_sq").dump())
-    root = '/home/andrew/Dropbox/phd/models/GredosModel/views'
-    param_file='/home/andrew/Dropbox/phd/models/GredosModel/global_parameters.json'
+    gl = GraphLoader(hostname=args.host, username=args.username, password=pwd,
+            root_dir=args.directory, fname_suffix=args.suffix,
+            global_param_file=args.parameters, refresh_graph=args.refresh)
 
-    gl = GraphLoader(hostname=args.host, username='andrew', password=pwd,
-            root_dir=root, fname_suffix='_w', global_param_file=param_file,
-            refresh_graph=True)
     print(gl.global_params)
     print(gl.graph)
     gl.load_cypher()
