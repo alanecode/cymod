@@ -119,7 +119,7 @@ class GraphLoader(object):
         This method will run an appropriate query to refresh thee graph ahead
         of loading new data.
         """
-        q = 'MATCH (n) WHERE n.project=$project AND n.model_ID=$model_ID DETACH DELETE n'
+        q = 'MATCH (n) WHERE n.model_ID=$model_ID DETACH DELETE n'
         print('Removing existing nodes matching global parameters')
         self.graph.run(q, self.global_params)
 
