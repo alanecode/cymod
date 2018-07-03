@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""loadcypher
+"""cymod
 
 Problem:
 
@@ -21,14 +21,14 @@ Problem:
     designing queries, cypher-shell currently appears to be limited in its
     capabilities in dealing with external files containing Cypher.
 
-    A particular limitation `loadcypher` aims to address is the ability to
+    A particular limitation `cymod` aims to address is the ability to
     set global Cypher parameters which will be applied to all files in the
     model. This is important for my model design use-case because every node in
     the database needs to be given `project` and `model_ID` properties to allow
-    multiple models to coexist in a single Neo4j instance. `loadcypher` will
+    multiple models to coexist in a single Neo4j instance. `cymod` will
     also search from a root node to collect all available Cyoher files with
     respect to a specified root directory. This could be achieved using
-    `cypher-shell` commands in a bash script, but `loadcypher` aims to be a
+    `cypher-shell` commands in a bash script, but `cymod` aims to be a
     starting point for solving various problems which may arise in the future
     and act as a one-stop-shop for Cypher loading tasks.
 
