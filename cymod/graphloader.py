@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """graphloader.py
 
@@ -8,14 +7,17 @@ transaction.
 Checks the database for the existence of nodes with the same global Parameters
 and carries out some user defined behaviour, e.g. append or remove and replace
 """
+from __future__ import print_function
+
 import sys
 import os
 import json
 import time
 
+from neo4j.exceptions import ServiceUnavailable
+
 from py2neo import Graph
-from httpstream.http import ClientError
-from py2neo.database.http import Unauthorized
+from py2neo.database import ClientError
 
 from filesystem import CypherFile, CypherFileFinder
 
@@ -57,7 +59,7 @@ class GraphLoader(object):
         try:
             graph = Graph(host=hostname, user=username, password=password)
             return graph
-        except (KeyError, ClientError, Unauthorized) as e:
+        except (KeyError, ClientError, ServiceUnavailable) as e:
             print('Could not load graph. Check password.', file=sys.stderr)
             print('Exception: %s' % str(e), file=sys.stderr)
             sys.exit(1)

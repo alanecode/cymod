@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """cymod
 
@@ -26,7 +25,7 @@ Problem:
     model. This is important for my model design use-case because every node in
     the database needs to be given `project` and `model_ID` properties to allow
     multiple models to coexist in a single Neo4j instance. `cymod` will
-    also search from a root node to collect all available Cyoher files with
+    also search from a root node to collect all available Cypher files with
     respect to a specified root directory. This could be achieved using
     `cypher-shell` commands in a bash script, but `cymod` aims to be a
     starting point for solving various problems which may arise in the future
@@ -37,6 +36,8 @@ Problem:
     automated checks on the Cypher input. However, we'll see how it goes.
 
 """
+from __future__ import print_function
+
 import os
 import sys
 import getpass

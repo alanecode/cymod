@@ -12,9 +12,7 @@ pylint = "*"
 
 [packages]
 
-"py2neo" = "*"
-httpstream = "*"
-
+"py2neo" = "==4.0.0"
 
 [requires]
 

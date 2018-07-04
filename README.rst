@@ -15,6 +15,15 @@ Parameters
 - d: root directory to search for files (defaults to current directory)
 -params: name of cypher parameters (json) file, defaults to none, throwing error if queries require parameters.
 
+
+Purpose
+____________________________________________________________
+
+Whereas py2neo is useful as an abstraction away from needing to write cypher
+when interacting with a database in Python, what cymod aims to do is /support/
+the use of cypher as a language which is useful for the description of
+complicated models.
+
 TODO
 ____________________________________________________________
 

@@ -1,10 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """filesystem.py
 
 Tools for finding Cypher files in the file system and extracting their contained
 data.
 """
+from __future__ import print_function
+
 import os
 import re
 import json
