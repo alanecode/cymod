@@ -43,7 +43,7 @@ import sys
 import getpass
 import argparse
 
-from graphloader import GraphLoader
+from graphloader import ServerGraphLoader
 
 if __name__ == '__main__':
     intro_string = ('Process cypher (graph database) query files and load ' +
@@ -66,9 +66,11 @@ if __name__ == '__main__':
     print('running loadcypher')
     pwd = getpass.getpass('Enter neo4j password:')
 
-    gl = GraphLoader(hostname=args.host, username=args.username, password=pwd,
-            root_dir=args.directory, fname_suffix=args.suffix,
-            global_param_file=args.parameters, refresh_graph=args.refresh)
+    gl = ServerGraphLoader(hostname=args.host, username=args.username,
+                           password=pwd, root_dir=args.directory,
+                           fname_suffix=args.suffix,
+                           global_param_file=args.parameters,
+                           refresh_graph=args.refresh)
 
     print(gl.global_params)
     print(gl.graph)

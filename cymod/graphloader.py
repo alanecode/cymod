@@ -22,14 +22,14 @@ from py2neo.database import ClientError
 from filesystem import CypherFile, CypherFileFinder
 
 class GraphLoader(object):
+    """Retrieve all Cypher data from the file system.
 
-    def __init__(self, hostname, username, password, root_dir, fname_suffix,
-            global_param_file=None, refresh_graph=False):
+    Also stores information about parameters if given.
+    """
+    def __init__(self, root_dir, fname_suffix, global_param_file=None):
         self.global_param_file = global_param_file
         self.global_params = self._load_global_params()
-        self.graph = self._get_graph(hostname, username, password)
         self.cypher_files = self._get_sorted_cypher_files(self._get_cypher_files(root_dir, fname_suffix))
-        self.refresh_graph = refresh_graph
 
     def _load_global_params(self):
         """Read global parameters from instance's global_param_file.
@@ -45,24 +45,6 @@ class GraphLoader(object):
                 return json.load(f)
         else:
             return dict()
-
-    def _get_graph(self, hostname, username, password):
-        """Attempt to connect to Neo4j graph.
-
-        exit program if we can't connect to the graph
-
-        returns a connected py2neo Graph object
-
-        TODO finish this docstring
-
-        """
-        try:
-            graph = Graph(host=hostname, user=username, password=password)
-            return graph
-        except (KeyError, ClientError, ServiceUnavailable) as e:
-            print('Could not load graph. Check password.', file=sys.stderr)
-            print('Exception: %s' % str(e), file=sys.stderr)
-            sys.exit(1)
 
     def _get_cypher_files(self, root_dir, fname_suffix):
         """Load a list of Cypher files to be loaded into the Graph.
@@ -101,16 +83,35 @@ class GraphLoader(object):
         return sorted(unsorted_cypher_files,
                 key=lambda f: get_priority_number(f, n), reverse=True)
 
-    def _load_cypher_file_queries(self, cypher_file, global_params):
-        """Load all queries in an individual cypher file into the graph."""
-        if cypher_file.params:
-            params = cypher_file.params.copy()
-        else:
-            params = {}
-        params.update(self.global_params)
-        for q in cypher_file.queries:
-            self.graph.run(q, params)
+class ServerGraphLoader(GraphLoader):
+    """Loads Cypher data into a running Neo4j database instance."""
+
+    def __init__(self, hostname, username, password, root_dir, fname_suffix,
+                 global_param_file=None, refresh_graph=False):
+        super(ServerGraphLoader, self).__init__(root_dir,
+                                                fname_suffix,
+                                                global_param_file)
+        self.graph = self._get_graph(hostname, username, password)
+        self.refresh_graph = refresh_graph
+
+    def _get_graph(self, hostname, username, password):
+        """Attempt to connect to Neo4j graph.
         
+        exit program if we can't connect to the graph
+
+        returns a connected py2neo Graph object
+
+        TODO finish this docstring
+
+        """
+        try:
+            graph = Graph(host=hostname, user=username, password=password)
+            return graph
+        except (KeyError, ClientError, ServiceUnavailable) as e:
+            print('Could not load graph. Check password.', file=sys.stderr)
+            print('Exception: %s' % str(e), file=sys.stderr)
+            sys.exit(1)
+
     def _refresh_graph(self):
         """Delete nodes in the graph with the global parameters of this model.
 
@@ -124,6 +125,16 @@ class GraphLoader(object):
         q = 'MATCH (n) WHERE n.model_ID=$model_ID DETACH DELETE n'
         print('Removing existing nodes matching global parameters')
         self.graph.run(q, self.global_params)
+
+    def _load_cypher_file_queries(self, cypher_file, global_params):
+        """Load all queries in an individual cypher file into the graph."""
+        if cypher_file.params:
+            params = cypher_file.params.copy()
+        else:
+            params = {}
+        params.update(self.global_params)
+        for q in cypher_file.queries:
+            self.graph.run(q, params)
 
     def load_cypher(self):
         """Load all Cypher files into the graph."""
@@ -140,3 +151,4 @@ class GraphLoader(object):
             self._load_cypher_file_queries(f, self.global_params)
 
         print('\nFinished loading {0} Cypher files'.format(num_files))
+
