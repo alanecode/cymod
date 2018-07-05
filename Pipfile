@@ -8,11 +8,13 @@ name = "pypi"
 [dev-packages]
 
 pylint = "*"
+ipython = "*"
 
 
 [packages]
 
 "py2neo" = "==4.0.0"
+
 
 [requires]
 
