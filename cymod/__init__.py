@@ -46,6 +46,7 @@ import getpass
 import argparse
 
 from graphloader import ServerGraphLoader
+from graphloader import EmbeddedGraphLoader
 
 if __name__ == '__main__':
     intro_string = ('Process cypher (graph database) query files and load ' +

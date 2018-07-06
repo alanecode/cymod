@@ -7,6 +7,15 @@ transaction.
 Checks the database for the existence of nodes with the same global Parameters
 and carries out some user defined behaviour, e.g. append or remove and replace
 
+Previously all code needed to do the following was in the GraphLoader 
+class: 
+1. load cypher and parameters from files, 
+2. load connect to a Neo4j server instance, and 
+3. insert cypher data into that database 
+
+Now 1 is handled by the GraphLoader class. 2 and 3 are achieved by 
+ServerGraphLoader.  
+
 """
 from __future__ import print_function
 
@@ -88,6 +97,35 @@ class GraphLoader(object):
         return sorted(unsorted_cypher_files,
                 key=lambda f: get_priority_number(f, n), reverse=True)
 
+    def _get_joint_params(self, cypher_file):
+        """Unite file-local and global parameters into a single dict."""
+        if cypher_file.params:
+            params = cypher_file.params.copy()
+        else:
+            params = {}
+        params.update(self.global_params)
+        return params
+    
+    def _parse_query_params(self, query, params):
+        """Construct a query from parameterised query and parameters. 
+
+        Given an individual Cypher query and a dictionary of corresponding
+        parameters, return a string in which the parameters have been
+        substituted into the query.
+        
+        Args:
+            query (str): The parameterised query string
+            params (dict): Key/value pairs where the keys are parameter names
+                appearing in the parameterised query, and the values are the
+                values to be substituted in.
+        Returns:
+            query_string (str): Complete query with concrete values replacing
+            parameters.
+        """
+        for k in iterkeys(params):
+            query = query.replace('$'+str(k), '"'+str(params[k])+'"')
+        return query
+
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
 
@@ -158,23 +196,13 @@ class ServerGraphLoader(GraphLoader):
                 print('Exception: %s' % str(e), file=sys.stderr)
                 sys.exit(1)                
         
-    def _load_cypher_file_queries(self, cypher_file, global_params):
+    def _load_cypher_file_queries(self, cypher_file):
         """Load all queries in an individual cypher file into the graph."""
-        if cypher_file.params:
-            params = cypher_file.params.copy()
-        else:
-            params = {}
-        params.update(self.global_params)
+        params = self._get_joint_params(cypher_file)
 
         def run_cypher_file_query(tx, query_string, params):
-            """Construct query from Cypher file string and params.
-
-            Run query against session transaction."""
-            for k in iterkeys(params):
-                query_string = query_string.replace('$'+str(k),
-                                                    '"'+str(params[k])+'"')
-            tx.run(query_string)
-
+            """Run concrete query (no params) against session transaction."""
+            tx.run(self._parse_query_params(query_string, params))
 
         with self.driver.session() as session:
             for q in cypher_file.queries:
@@ -192,7 +220,51 @@ class ServerGraphLoader(GraphLoader):
         while files:
             f = files.pop()
             print('loading '+os.path.basename(f.filename))
-            self._load_cypher_file_queries(f, self.global_params)
+            self._load_cypher_file_queries(f)
 
         print('\nFinished loading {0} Cypher files'.format(num_files))
 
+class EmbeddedGraphLoader(GraphLoader):
+    """Loads Cypher data and provides interface to access it 
+ 
+    Provides an embedded jython-friendly interface to the cypher data. This 
+    will allow cymod to be used within Java applicatons to provide data to an 
+    embedded Neo4j instance. 
+ 
+    Using cymod within Java applications is a big help when using Neo4j and 
+    Cypher in situations in which a Java application will have access to a JRE 
+    but no Neo4j server will be available. 
+ 
+    """
+    def __init__(self, root_dir, fname_suffix, global_param_file=None):
+        super(EmbeddedGraphLoader, self).__init__(root_dir,
+                                                  fname_suffix,
+                                                  global_param_file)
+
+    def _get_cypher_file_queries(self, cypher_file):
+        """Return concrete (no params) queries for CypherFile"""
+        params = self._get_joint_params(cypher_file)
+        queries = [self._parse_query_params(q, params)
+                   for q
+                   in cypher_file.queries]
+                   #if q.strip() <> '']
+        return queries
+
+    def query_generator(self):
+        """Go through each query in each file in turn, yielding queries."""
+        files = list(self.cypher_files)
+        num_files = len(files)
+        nf = 0
+        nq = 0
+        while nf < num_files:
+            # lis of concrete (no params) queries for each CypherFile in
+            # loop
+            queries = self._get_cypher_file_queries(files[nf])
+            no_queries = len(queries)
+            print('Processing {0} queries in file {1}'.format(no_queries,
+                                                        files[nf].filename))
+            while nq < len(queries):
+                yield queries[nq]
+                nq += 1
+            nf += 1
+            nq = 0
