@@ -13,26 +13,28 @@ Problem:
     changed).
 
     At the time of writing the top Google result for 'neo4j load in cypher
-    files' is this https://stackoverflow.com/questions/43648512/how-to-load-cypher-file-into-neo4j
+    files' is this
+    https://stackoverflow.com/questions/43648512/how-to-load-cypher-file-into-neo4j
     Stack Overflow answer whose solution involves piping Cypher queries from a
-    file into the cypher-shell https://neo4j.com/docs/operations-manual/current/tools/cypher-shell/
+    file into the cypher-shell
+    https://neo4j.com/docs/operations-manual/current/tools/cypher-shell/
     command line utility which ships with Neo4j. While useful for interactively
     designing queries, cypher-shell currently appears to be limited in its
     capabilities in dealing with external files containing Cypher.
 
-    A particular limitation `cymod` aims to address is the ability to
-    set global Cypher parameters which will be applied to all files in the
+    A particular limitation `cymod` aims to address is the ability to set
+    global Cypher parameters which will be applied to all files in the
     model. This is important for my model design use-case because every node in
     the database needs to be given `project` and `model_ID` properties to allow
-    multiple models to coexist in a single Neo4j instance. `cymod` will
-    also search from a root node to collect all available Cypher files with
-    respect to a specified root directory. This could be achieved using
-    `cypher-shell` commands in a bash script, but `cymod` aims to be a
-    starting point for solving various problems which may arise in the future
-    and act as a one-stop-shop for Cypher loading tasks.
+    multiple models to coexist in a single Neo4j instance. `cymod` will also
+    search from a root node to collect all available Cypher files with respect
+    to a specified root directory. This could be achieved using `cypher-shell`
+    commands in a bash script, but `cymod` aims to be a starting point for
+    solving various problems which may arise in the future and act as a
+    one-stop-shop for Cypher loading tasks.
 
-    At present I have grand designs involving the development of some tools
-    to assist in the debugging of errors in the model specification by running
+    At present I have grand designs involving the development of some tools to
+    assist in the debugging of errors in the model specification by running
     automated checks on the Cypher input. However, we'll see how it goes.
 
 """
@@ -44,13 +46,14 @@ import getpass
 import argparse
 
 from graphloader import ServerGraphLoader
+from graphloader import EmbeddedGraphLoader
 
 if __name__ == '__main__':
     intro_string = ('Process cypher (graph database) query files and load ' +
                     'into specified neo4j database.')
     parser = argparse.ArgumentParser(description=intro_string)
-    parser.add_argument('--host', default='localhost', type=str,
-        help='database hostname')
+    parser.add_argument('--uri', default='bolt://localhost:7687', type=str,
+        help='database uri')
     parser.add_argument('-u', '--username', default='neo4j',
         help='username for Neo4j database connection')
     parser.add_argument('-d', '--directory', default=os.getcwd(),
@@ -58,20 +61,22 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--parameters',
         help='JSON file containing cypher parameters to use with all queries')
     parser.add_argument('-s', '--suffix',
-        help='Identifier at end of file name (before file exension) indicating cypher file should be loaded')
+        help='Identifier at end of file name (before file exension) '\
+                        'indicating cypher file should be loaded')
     parser.add_argument('-r', '--refresh', action='store_true',
-        help='Delete previously stored data in database with matching global parameters before loading')
+        help='Delete previously stored data in database with matching '\
+                        'global parameters before loading')
 
     args = parser.parse_args()
     print('running loadcypher')
     pwd = getpass.getpass('Enter neo4j password:')
 
-    gl = ServerGraphLoader(hostname=args.host, username=args.username,
+    gl = ServerGraphLoader(uri=args.uri, username=args.username,
                            password=pwd, root_dir=args.directory,
                            fname_suffix=args.suffix,
                            global_param_file=args.parameters,
                            refresh_graph=args.refresh)
 
     print(gl.global_params)
-    print(gl.graph)
+    print(gl.driver)
     gl.load_cypher()
