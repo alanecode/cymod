@@ -13,7 +13,7 @@ ipython = "*"
 
 [packages]
 
-"py2neo" = "==4.0.0"
+"neo4j-driver" = ">=1.6.0"
 
 
 [requires]
