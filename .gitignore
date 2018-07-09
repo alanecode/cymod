@@ -3,3 +3,9 @@
 *~
 *#
 cymod/tmp.py
+
+# managed on documentation branch
+docs/*
+
+# generated files
+cymod.egg-info/*
