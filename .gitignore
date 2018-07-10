@@ -9,3 +9,5 @@ docs/*
 
 # generated files
 cymod.egg-info/*
+#Jython compiled source files, accumulated during development and testing
+*$py.class
