@@ -30,7 +30,7 @@ from neo4j.v1 import GraphDatabase
 from neo4j.exceptions import CypherSyntaxError 
 #from neo4j.exceptions import ServiceUnavailable
 
-from filesystem import CypherFile, CypherFileFinder
+from cymod.filesystem import CypherFile, CypherFileFinder
 
 class GraphLoader(object):
     """Retrieve all Cypher data from the file system.
