@@ -9,13 +9,17 @@ name = "pypi"
 
 pylint = "*"
 ipython = "*"
+"backports.tempfile" = "*"
 
 
 [packages]
 
 "neo4j-driver" = ">=1.6.0"
+pandas = "*"
+future = "*"
+"backports.tempfile" = "*"
 
 
 [requires]
 
-python_version = "3.5"
+python_version = "2.7"
