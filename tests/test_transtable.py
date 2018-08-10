@@ -5,11 +5,17 @@ import datetime
 import unittest
 from backports import tempfile
 
+# numpy sanctioned hack to avoid irritating and unuseful warnings
+# https://github.com/numpy/numpy/pull/432/commits/170ed4e33d6196d724dc18ddcd42311c291b4587?diff=split
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+
 import pandas as pd
-from make_cypher import EnvironTransitionSet, EnvironTransition
+from cymod.transtable import EnvironTransitionSet, EnvironTransition
 
 global test_data_dir
-test_data_dir = os.path.join('test', 'resources')
+test_data_dir = os.path.join('tests', 'resources')
 
 
 class EnvironTransitionTestCase(unittest.TestCase):
