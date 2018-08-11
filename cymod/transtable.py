@@ -251,13 +251,3 @@ class EnvironTransitionSet(object):
             fname = os.path.join(target_dir, k)
             with open(fname, 'w') as f:
                 f.write(d[k])
-
-
-if __name__ == """__main__""":
-    df = pd.read_pickle('traj.pkl')
-    env_trans_set = EnvironTransitionSet(df, 'start_code', 'end_code',
-                                         'delta_T')
-
-    # env_trans_set.apply_environ_condition_aliases({})
-    # env_trans_set.apply_state_aliases({})
-    env_trans_set.write_cypher_files('~/AgroSuccess/views')

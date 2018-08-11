@@ -7,14 +7,14 @@ transaction.
 Checks the database for the existence of nodes with the same global Parameters
 and carries out some user defined behaviour, e.g. append or remove and replace
 
-Previously all code needed to do the following was in the GraphLoader 
-class: 
-1. load cypher and parameters from files, 
-2. load connect to a Neo4j server instance, and 
-3. insert cypher data into that database 
+Previously all code needed to do the following was in the GraphLoader
+class:
+1. load cypher and parameters from files,
+2. load connect to a Neo4j server instance, and
+3. insert cypher data into that database
 
-Now 1 is handled by the GraphLoader class. 2 and 3 are achieved by 
-ServerGraphLoader.  
+Now 1 is handled by the GraphLoader class. 2 and 3 are achieved by
+ServerGraphLoader.
 
 """
 from __future__ import print_function
@@ -22,15 +22,14 @@ from __future__ import print_function
 import sys
 import os
 import json
-import time
 
 from six import iteritems, iterkeys
 
 from neo4j.v1 import GraphDatabase
-from neo4j.exceptions import CypherSyntaxError 
-#from neo4j.exceptions import ServiceUnavailable
+from neo4j.exceptions import CypherSyntaxError
 
-from cymod.filesystem import CypherFile, CypherFileFinder
+from cymod.filesystem import CypherFileFinder
+
 
 class GraphLoader(object):
     """Retrieve all Cypher data from the file system.
@@ -40,7 +39,8 @@ class GraphLoader(object):
     def __init__(self, root_dir, fname_suffix, global_param_file=None):
         self.global_param_file = global_param_file
         self.global_params = self._load_global_params()
-        self.cypher_files = self._get_sorted_cypher_files(self._get_cypher_files(root_dir, fname_suffix))
+        self.cypher_files = self._get_sorted_cypher_files(
+            self._get_cypher_files(root_dir, fname_suffix))
 
     def _load_global_params(self):
         """Read global parameters from instance's global_param_file.
@@ -95,7 +95,7 @@ class GraphLoader(object):
 
         n = len(unsorted_cypher_files)
         return sorted(unsorted_cypher_files,
-                key=lambda f: get_priority_number(f, n), reverse=True)
+                      key=lambda f: get_priority_number(f, n), reverse=True)
 
     def _get_joint_params(self, cypher_file):
         """Unite file-local and global parameters into a single dict."""
@@ -105,9 +105,9 @@ class GraphLoader(object):
             params = {}
         params.update(self.global_params)
         return params
-    
+
     def _parse_query_params(self, query, params):
-        """Construct a query from parameterised query and parameters. 
+        """Construct a query from parameterised query and parameters.
 
         Given an individual Cypher query and a dictionary of corresponding
         parameters, return a string in which the parameters have been
@@ -126,6 +126,7 @@ class GraphLoader(object):
             query = query.replace('$'+str(k), '"'+str(params[k])+'"')
         return query
 
+
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
 
@@ -139,7 +140,7 @@ class ServerGraphLoader(GraphLoader):
 
     def _get_graph_driver(self, uri, username, password):
         """Attempt to obtain a driver for Neo4j server.
-        
+
         exit program if we can't obtain a driver
 
         returns a connected GraphDatabase.driver
@@ -149,7 +150,7 @@ class ServerGraphLoader(GraphLoader):
         """
         try:
             driver = GraphDatabase.driver(uri,
-                        auth=(username, password))
+                                          auth=(username, password))
             return driver
         except Exception as e:
             print('Could not load graph. Check password.', file=sys.stderr)
@@ -170,13 +171,13 @@ class ServerGraphLoader(GraphLoader):
         """
         def remove_all_nodes(tx, global_params):
             """Remove nodes with properties specified in global_params.
-            
+
             A callback function called by driver.session().write_transaction
-            
+
             Args:
                 tx: database transaction object provided by write_transaction.
                 global_params (dict): key/value pairs of property names and
-                    their values which together specify the model to be 
+                    their values which together specify the model to be
                     refreshed.
             """
             # construct query string from provided global_params dict
@@ -194,8 +195,8 @@ class ServerGraphLoader(GraphLoader):
                 print('Error in Cypher refreshing database. Check syntax.',
                       file=sys.stderr)
                 print('Exception: %s' % str(e), file=sys.stderr)
-                sys.exit(1)                
-        
+                sys.exit(1)
+
     def _load_cypher_file_queries(self, cypher_file):
         """Load all queries in an individual cypher file into the graph."""
         params = self._get_joint_params(cypher_file)
@@ -224,17 +225,18 @@ class ServerGraphLoader(GraphLoader):
 
         print('\nFinished loading {0} Cypher files'.format(num_files))
 
+
 class EmbeddedGraphLoader(GraphLoader):
-    """Loads Cypher data and provides interface to access it 
- 
-    Provides an embedded jython-friendly interface to the cypher data. This 
-    will allow cymod to be used within Java applicatons to provide data to an 
-    embedded Neo4j instance. 
- 
-    Using cymod within Java applications is a big help when using Neo4j and 
-    Cypher in situations in which a Java application will have access to a JRE 
-    but no Neo4j server will be available. 
- 
+    """Loads Cypher data and provides interface to access it
+
+    Provides an embedded jython-friendly interface to the cypher data. This
+    will allow cymod to be used within Java applicatons to provide data to an
+    embedded Neo4j instance.
+
+    Using cymod within Java applications is a big help when using Neo4j and
+    Cypher in situations in which a Java application will have access to a JRE
+    but no Neo4j server will be available.
+
     """
     def __init__(self, root_dir, fname_suffix, global_param_file=None):
         super(EmbeddedGraphLoader, self).__init__(root_dir,
@@ -247,7 +249,6 @@ class EmbeddedGraphLoader(GraphLoader):
         queries = [self._parse_query_params(q, params)
                    for q
                    in cypher_file.queries]
-                   #if q.strip() <> '']
         return queries
 
     def query_generator(self):
@@ -261,8 +262,8 @@ class EmbeddedGraphLoader(GraphLoader):
             # loop
             queries = self._get_cypher_file_queries(files[nf])
             no_queries = len(queries)
-            print('Processing {0} queries in file {1}'.format(no_queries,
-                                                        files[nf].filename))
+            print('Processing {0} queries in file {1}'
+                  .format(no_queries, files[nf].filename))
             while nq < len(queries):
                 yield queries[nq]
                 nq += 1
