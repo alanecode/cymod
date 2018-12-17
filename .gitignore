@@ -4,8 +4,12 @@
 *#
 cymod/tmp.py
 
+# editor config files
+.vscode/*
+
 # managed on documentation branch
 docs/*
+
 
 # generated files
 cymod.egg-info/*
