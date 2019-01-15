@@ -1,0 +1,174 @@
+#+TITLE: Cymod development planning
+
+* Versions
+** Version 0.1
+*** Completion criteria 
+- Stable API
+- Supports constructing a model specification graph database from either graph
+  structured (Cypher files) or tabular ([[https://pandas.pydata.org][~pandas~]] DataFrame) data sources
+  (~.csv~ or ~.xlsx~).
+- Data will be loaded into the Neo4j graph database specified by the
+  ~dbms.active_database~ and ~dbms.directories.data~ settings in the Neo4j
+  server configuration file ~neo4j.conf~.
+- Works in Python 2.7, 3.5, 3.6 and 3.7
+- /Experimentally/ supports an EmbeddedGraphLoader. This is not importable from
+  the cymod package (i.e. can't be imported with ~from cymod import *~) but can
+  be loaded directly from the relevant module by a user who knows what they are
+  doing.
+
+*** Use Cases
+**** UC1: Model specified by Cypher files
+:PROPERTIES:
+:CUSTOM_ID: cymod-v0.1-UC1
+:END:
+The model is completely specified by Cypher files stored in subdirectories of
+~model/views/~. 
+
+#+BEGIN_SRC python
+from cymod import ServerGraphLoader
+
+# initialise a ServerGraphLoader object
+gl = ServerGraphLoader()
+
+# read cypher queries from files in model/views directory
+gl.load_cypher("model/views")
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+**** UC2: Model specified by a natural language succession transition table
+The model is completely specified by a table contained in the file ~model.csv~
+with the following structure:
+
+| start  | end    | cond1 | cond2 | trans_time |
+|--------+--------+-------+-------+------------|
+| state1 | state2 | FALSE | low   |          2 |
+| state2 | state3 | TRUE  | high  |          3 |
+
+This can be loaded into the graph database using ~cymod~ as follows
+
+#+BEGIN_SRC python
+import pandas as pd
+from cymod import ServerGraphLoader
+
+# Initialise ServerGraphLoader object
+gl = ServerGraphLoader()
+
+# Prepare pandas dataframe
+trans_df = pd.read_csv("model.csv")
+
+# Load the tabular data into the ServerGraphLoader object
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end", 
+                time_col="trans_time")
+
+#+END_SRC
+
+**** UC3: Model specified by a coded succession transition table
+~load_tabular~ takes an optional EnvrStateAliasTranslator object. If given, this
+will be used to convert numerical codes specified in the table to their
+equivalent natural language terms.
+
+The model is completely specified by a table contained in the file
+~coded_model.csv~ with the following structure:
+
+| start | end | cond1 | cond2 | trans_time |
+|-------+-----+-------+-------+------------|
+|     0 |   1 |     0 |     0 |          2 |
+|     1 |   2 |     1 |     2 |          3 |
+
+
+#+BEGIN_SRC python
+import pandas as pd
+from cymod import ServerGraphLoader, EnvrStateAliasTranslator
+
+# Set up EnvrStateAliasTranslator and configure with relevant model-specific data
+trans = EnvrStateAliasTranslator()
+trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
+trans.add_condition_aliases("cond1", {0: False, 1: True})
+trans.add_condition_aliases("cond2", {0: "low", 1: "high"})
+
+# Initialise ServerGraphLoader object
+gl = ServerGraphLoader()
+
+# Prepare pandas dataframe
+trans_df = pd.read_csv("coded_model.csv")
+
+# Load the tabular data into the ServerGraphLoader object
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end", 
+                time_col="trans_time", state_alias_translator=trans)
+#+END_SRC
+
+**** UC4: Model specified by a mixture of Cypher files and a natural language succession table
+
+
+*** Development plan
+**** v0.0.3
+Supports loading cypher files with new API
+
+**** v0.0.4
+Supports loading natural language succession table
+
+**** v0.0.5 
+Supports coded succession table
+
+**** v0.0.6 
+Adds support for python 3
+
+
+** Version 0.2
+*** Completion criteria
+Adds functionality to specify which Neo4j database should be used as the data
+loading target. This will make it easier to generate multiple different graph
+data stores, encoding multiple different model structures.
+*** Use cases
+**** Use non-standard graph location
+Suppose we want to load our model data into a graph database called
+~mymodel.db~ stored within in the directory ~~/graphs~. This can be achieved as follows:
+
+#+BEGIN_SRC python
+from cymod import ServerGraphLoader
+
+# initialise a ServerGraphLoader object using a non-standard database location
+gl = ServerGraphLoader(data_dir="~/graphs", database="mymodel.db")
+
+# read cypher queries from files in model/views directory
+gl.load_cypher("model/views")
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+Note that this script would likely require root privileges to run as it will
+need to modify (and then revert) the Neo4j configuration file ~neo4j.conf~
+
+** Version 0.3
+Adds functionality to supply queries to an embedded Neo4j graph instance. This
+will create the possibility of loading Cypher and/ or tabular data into a
+simulation model on a computer which doesn't have Neo4j Server installed. That
+is, the simulation model will be configured by the source files directly, not a
+graph data store previously generated by Neo4j server.
+
+This might manifest itself by either:
+1. Providing an interface via Jython
+2. Relying on the calling Java application being able to call python as an
+   external process. 
+
+* Integration with AgroSuccess
+** With Jython
+As of [2019-01-15 Tue] AgroSuccess has only been tested with Cymod v0.0.1
+running within jython v2.7.0
+
+** With [[https://github.com/ninia/jep][JEP]]
+- Not tried with Cymod yet [2019-01-15 Tue]
+- Recommended [[https://stackoverflow.com/questions/8898765/calling-python-in-java#answer-42844490][in this SO answer]]
+- Embeds CPython and supports Python 3.7
+- More commits than jpy. [[https://groups.google.com/forum/#!topic/jep-project/D6FGDTWCIlI][Thread]] discussing comparison between JEP and jPy
+
+** With [[https://github.com/bcdev/jpy][jPy]]
+- Not tried with Cymod yet [2019-01-15 Tue]
+- Recommended [[https://stackoverflow.com/questions/8898765/calling-python-in-java#answer-42844490][in this SO answer]] 
+- Developed to support writing python extension for established scientific
+  application written in Java
+
+
