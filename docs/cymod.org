@@ -17,67 +17,214 @@
   doing.
 
 *** Use Cases
-**** UC1: Model specified by Cypher files
+**** UC1: Load model specified by Cypher files into Neo4j server
 :PROPERTIES:
 :CUSTOM_ID: cymod-v0.1-UC1
 :END:
-The model is completely specified by Cypher files stored in subdirectories of
-~model/views/~. 
+***** Use case description 
+User John has prepared the following project directory containing data
+specifying the model he wants to load into Neo4j server. 
 
+#+BEGIN_EXAMPLE
+.
+└── cypher-files
+    ├── dir1
+    │   ├── queries1.cypher
+    │   └── queries2.cql
+    └── dir2
+        └── queries3.cyp
+#+END_EXAMPLE
+
+There are three files containing Cypher queries in the subdirectories of the
+~cypher-files~ directory, each with a different file extension recognised by
+cymod: ~.cypher~, ~.cql~, and ~.cyp~. All of these should be loaded into Neo4j server.
+
+***** API usage
 #+BEGIN_SRC python
 from cymod import ServerGraphLoader
 
 # initialise a ServerGraphLoader object
-gl = ServerGraphLoader()
+gl = ServerGraphLoader(user="username", password="password")
 
-# read cypher queries from files in model/views directory
-gl.load_cypher("model/views")
+# read cypher queries from files in cypher-files directory
+gl.load_cypher("cypher-files")
 
 # run these queries against the graph specified in the neo4j configuration file
 gl.commit()
 #+END_SRC
 
-**** UC2: Model specified by a natural language succession transition table
-The model is completely specified by a table contained in the file ~model.csv~
-with the following structure:
+**** UC2: Load model specified by Cypher files suffixed by '_w' into Neo4j server
+:PROPERTIES:
+:CUSTOM_ID: cymod-v0.1-UC1
+:END:
+***** Use case description 
+User Sue has prepared the following project directory containing data
+specifying the model she wants to load into Neo4j server. 
+
+#+BEGIN_EXAMPLE
+.
+└── cypher-files
+    ├── queries_r.cql
+    └── queries_w.cql
+#+END_EXAMPLE
+
+There are two files containing Cypher queries in the ~cypher-files~ directory,
+but only the one with the pre-extension file suffix ~'-w'~ is intended to be
+loaded into the database -- Sue uses the file with name suffixed ~-r~ during
+development and keeps it alongside the file whose contents should be loaded into
+the database for convenience.
+
+***** API usage
+#+BEGIN_SRC python
+from cymod import ServerGraphLoader
+
+# initialise a ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+
+# read cypher queries from files in cypher-files directory
+gl.load_cypher("cypher-files", cypher_file_suffix="_w")
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+
+**** UC3: Load model specified by Cypher files requiring global parameters into Neo4j server
+***** Use case description 
+User Chris has prepared the following project directory containing data
+specifying the model he wants to load into Neo4j server.
+
+#+BEGIN_EXAMPLE
+.
+├── cypher-files
+│   └── queries.cql
+└── parameters.json
+#+END_EXAMPLE
+
+The file ~cypher-files/queries.cql~ contains Cypher queries which reference
+[[https://neo4j.com/docs/cypher-manual/current/syntax/parameters/][parameters]] called ~model_ID~ and ~model_version~ which are specified as json
+data in the file ~parameters.json~.
+
+#+BEGIN_EXAMPLE
+$ cat parameters.json 
+{
+    "model_ID": "cymod-test-model"
+    "model_version": "0.0.15" 
+}
+#+END_EXAMPLE
+
+***** API usage
+#+BEGIN_SRC python
+from cymod import ServerGraphLoader, CypherParams
+
+# initialise a ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+
+# create a CypherParams object to hold the parameters available to all 
+# cypher files
+params = CypherParams("parameters.json")
+
+# read cypher queries from files in cypher-files directory
+gl.load_cypher("cypher-files", global_params=params)
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+**** UC4: Load model specified by a transition table into Neo4j server
+:PROPERTIES:
+:CUSTOM_ID: UC4-trans-table
+:END:
+
+***** Model description
+User Dave doesn't have any Cypher files to load into Neo4j server, instead he
+intends to construct a model using tabular data specified in the file
+~model.csv~. This file has the following structure:
 
 | start  | end    | cond1 | cond2 | trans_time |
 |--------+--------+-------+-------+------------|
 | state1 | state2 | FALSE | low   |          2 |
 | state2 | state3 | TRUE  | high  |          3 |
 
-This can be loaded into the graph database using ~cymod~ as follows
+Each row corresponds to an individual transition rule. Importantly, identifiers
+for the start and end states of each transition are specified in the 'start'
+and 'end' columns.
 
+This tabular data can be loaded into the graph database using ~cymod~ as
+follows:
+
+***** API usage
 #+BEGIN_SRC python
 import pandas as pd
 from cymod import ServerGraphLoader
 
 # Initialise ServerGraphLoader object
-gl = ServerGraphLoader()
+gl = ServerGraphLoader(user="username", password="password")
 
 # Prepare pandas dataframe
 trans_df = pd.read_csv("model.csv")
 
 # Load the tabular data into the ServerGraphLoader object
-gl.load_tabular(trans_df, start_state_col="start", end_state_col="end", 
-                time_col="trans_time")
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end")
 
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
 #+END_SRC
 
-**** UC3: Model specified by a coded succession transition table
-~load_tabular~ takes an optional EnvrStateAliasTranslator object. If given, this
-will be used to convert numerical codes specified in the table to their
-equivalent natural language terms.
+**** UC5: Load model specified by a transition table into Neo4j server using custom node labels
+***** Use case description
+User Dave wants to give the nodes in the model generated in [[#UC4-trans-table][UC4]] some customised
+domain specific labels. ~State~ nodes should be labelled ~LandCoverState~,
+~Transition~ nodes should be labelled ~LandCoverTransition~, and ~Condition~
+nodes should be labelled ~EnvironCodition~.
 
-The model is completely specified by a table contained in the file
-~coded_model.csv~ with the following structure:
+This can be achieved by modifying the code used for [[#UC4-trans-table][UC4]] as follows:
+
+***** API usage
+#+BEGIN_SRC python
+import pandas as pd
+from cymod import ServerGraphLoader, CustomLabels
+
+# Initialise ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+
+# Prepare pandas dataframe
+trans_df = pd.read_csv("model.csv")
+
+# Specify custom node labels
+labels = CustomLabels({"State": "LandCoverState", 
+                       "Transition": "LandCoverTransition",
+                       "Condition" : "EnvironCondition"})
+
+# Load the tabular data into the ServerGraphLoader object
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end",
+                labels=labels)
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+
+**** UC6: Load model specified by a coded succession transition table into Neo4j server
+***** Use case description
+Jenny has the same table to load into Neo4j server as Dave (of [[#UC4-trans-table][UC4]] fame) did
+but, being of a quantitative bent, Jenny has encoded the data using numerical
+codes.
 
 | start | end | cond1 | cond2 | trans_time |
 |-------+-----+-------+-------+------------|
 |     0 |   1 |     0 |     0 |          2 |
 |     1 |   2 |     1 |     2 |          3 |
 
+These codes have the following meanings:
 
+- States: ~0=state1~, ~1=state2~
+- ~cond1~: ~0=False~, ~1=True~
+- ~cond2~: ~0=low~, ~1=high~
+
+The ~trans_time~ column contains numerical data as was the case in UC4.
+
+***** API usage
 #+BEGIN_SRC python
 import pandas as pd
 from cymod import ServerGraphLoader, EnvrStateAliasTranslator
@@ -89,30 +236,65 @@ trans.add_condition_aliases("cond1", {0: False, 1: True})
 trans.add_condition_aliases("cond2", {0: "low", 1: "high"})
 
 # Initialise ServerGraphLoader object
-gl = ServerGraphLoader()
+gl = ServerGraphLoader(user="username", password="password")
 
 # Prepare pandas dataframe
 trans_df = pd.read_csv("coded_model.csv")
 
 # Load the tabular data into the ServerGraphLoader object
 gl.load_tabular(trans_df, start_state_col="start", end_state_col="end", 
-                time_col="trans_time", state_alias_translator=trans)
+                state_alias_translator=trans)
 #+END_SRC
 
-**** UC4: Model specified by a mixture of Cypher files and a natural language succession table
 
+**** UC7: Load model specified by a mixture of Cypher files and a natural language succession table into Neo4j server
+
+***** Use case description
+Emma has a model which embellishes the table Dave made in [[#UC4-trans-table][UC4]] with some Cypher
+queries contained in ~cypher-files/queries.cql~. She assumes it doesn't matter
+whether the data from table or the Cypher queries is loaded into the database first.
+
+#+BEGIN_EXAMPLE
+.
+├── cypher-files
+│   └── queries.cql
+└── model.csv
+#+END_EXAMPLE
+
+These can both be loaded into Neo4j server as follows:
+
+***** API Usage
+#+BEGIN_SRC python
+import pandas as pd
+from cymod import ServerGraphLoader
+
+# Initialise ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+
+# Prepare pandas dataframe
+trans_df = pd.read_csv("model.csv")
+
+# Load the tabular data into the ServerGraphLoader object
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end")
+
+# Load the data from the Cypher file
+gl.load_cypher("cypher-files")
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
 
 *** Development plan
 **** v0.0.3
-Supports loading cypher files with new API
+Supports loading cypher files with new API (UC1 - UC3)
 
 **** v0.0.4
-Supports loading natural language succession table
+Supports loading natural language succession table (UC4 - UC5)
 
 **** v0.0.5 
-Supports coded succession table
+Supports coded succession table (UC6)
 
-**** v0.0.6 
+**** v0.0.6 / v0.1.0
 Adds support for python 3
 
 
@@ -130,10 +312,11 @@ Suppose we want to load our model data into a graph database called
 from cymod import ServerGraphLoader
 
 # initialise a ServerGraphLoader object using a non-standard database location
-gl = ServerGraphLoader(data_dir="~/graphs", database="mymodel.db")
+gl = ServerGraphLoader(user="username", password="password",
+                       data_dir="~/graphs", database="mymodel.db")
 
 # read cypher queries from files in model/views directory
-gl.load_cypher("model/views")
+gl.load_cypher("cypher-files")
 
 # run these queries against the graph specified in the neo4j configuration file
 gl.commit()
@@ -141,6 +324,7 @@ gl.commit()
 
 Note that this script would likely require root privileges to run as it will
 need to modify (and then revert) the Neo4j configuration file ~neo4j.conf~
+
 
 ** Version 0.3
 Adds functionality to supply queries to an embedded Neo4j graph instance. This
@@ -153,6 +337,15 @@ This might manifest itself by either:
 1. Providing an interface via Jython
 2. Relying on the calling Java application being able to call python as an
    external process. 
+
+* Modelling
+** Scenario 1
+
+
+
+
+
+
 
 * Integration with AgroSuccess
 ** With Jython
