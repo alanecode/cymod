@@ -11,6 +11,8 @@ cymod/tmp.py
 cymod.egg-info/*
 #Jython compiled source files, accumulated during development and testing
 *$py.class
+
+# temporary modelling files
 /model/.project
 /model/cymod.pdf
 /model/cymod.uml
