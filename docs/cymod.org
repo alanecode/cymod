@@ -1,6 +1,19 @@
 #+TITLE: Cymod development planning
 
 * Versions
+** Verion 0.0.2
+*** Review of existing classes
+*** filesystem.py
+**** CypherFile
+**** CypherFileFinder
+*** graphloader.py
+**** GraphLoader
+**** EmbeddedGraphLoader
+Has one public method, query_generator(), which returns a generator whose
+.next() method returns strings consisting of individual Cypher queries which
+have had their parameters replaced with appropriate concrete values.
+**** ServerGraphLoader
+
 ** Version 0.1
 *** Completion criteria 
 - Stable API
