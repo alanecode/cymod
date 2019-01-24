@@ -9,6 +9,7 @@ system, and to generate Cypher to represent data contained in
 """
 from __future__ import print_function
 import re
+import json
 
 class CypherQuerySource(object):
     """Container for information about a Cypher query's original source."""
