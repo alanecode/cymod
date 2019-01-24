@@ -54,7 +54,6 @@ class CypherQuerySourceTestCase(unittest.TestCase):
             "   cond     end   start\n0   low  state2  state1\n"\
             "1  high  state3  state2")
 
-
 class CypherQueryTestCase(unittest.TestCase):
     def test_statement(self):
         """CypherQuery.statement should return query string."""
@@ -169,11 +168,41 @@ class CypherFileTestCase(unittest.TestCase):
             self.test_dir, "two_query_partial_param.cql")
         with open(self.two_query_partial_param_cypher_file_name, "w") as f:
             write_two_query_partial_param_cypher_file(f)
+
+        # One query file with two parameters, one of which is the special
+        # 'priority' parameter which specifies the order in which files should
+        # be loaded.
+        write_one_query_param_cypher_file_w_priority = \
+            self.dummy_cypher_file_writer_maker([
+                # statement 1
+                'MERGE (n1:TestNode {role:"influencer", name:$name1})' +
+                '-[:INFLUENCES]->\n' +
+                '(n2:TestNode {name:"Billy", role:"follower"});'
+                ], params={"name1": "Sue", "priority": 2})
         
+        self.one_query_param_cypher_file_w_priority_name = path.join(
+            self.test_dir, "one_query_param_w_priority.cql")
+        with open(self.one_query_param_cypher_file_w_priority_name, "w") as f:
+            write_one_query_param_cypher_file_w_priority(f)        
 
     def tearDown(self):
         # Remove the temp directory after the test
         shutil.rmtree(self.test_dir)
+
+    def test_priority_is_retrievable(self):
+        """CypherFile.priority should be retrieved from file parameters.
+        
+        If not specified, priority assumed to be 0.
+        """
+        cf1 = CypherFile(self.one_query_param_cypher_file_w_priority_name)
+        self.assertEqual(cf1.priority, 2)
+
+        cf2 = CypherFile(self.three_query_explicit_cypher_file_name)
+        self.assertEqual(cf1.priority, 0)
+
+        cf3 = CypherFile(self.two_query_partial_param_cypher_file_name)
+        self.assertEqual(cf1.priority, 0)
+        
 
     def test_queries_is_a_tuple(self):
         """CypherFile.queries should be a tuple of CypherQuery objects."""
