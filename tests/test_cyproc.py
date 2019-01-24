@@ -29,16 +29,16 @@ class CypherQuerySourceTestCase(unittest.TestCase):
         s = CypherQuerySource("queries.cql", "cypher", 10)
         self.assertEqual(s.ref, "queries.cql")
 
-    def test_form(self):
-        """CypherQuerySource.form returns source form (cypher or tabular)."""
+    def test_ref_type(self):
+        """CypherQuerySource.ref_type returns source type (cypher or tabular)."""
         s1 = CypherQuerySource("queries.cql", "cypher", 10)
-        self.assertEqual(s1.form, "cypher")
+        self.assertEqual(s1.ref_type, "cypher")
 
         s2 = CypherQuerySource(self.demo_table, "tabular", 2)
-        self.assertEqual(s2.form, "tabular")
+        self.assertEqual(s2.ref_type, "tabular")
 
-    def test_invalid_source_form_throws_error(self):
-        """CypherQuerySource throws value error if invalid form given"""
+    def test_invalid_source_ref_type_throws_error(self):
+        """CypherQuerySource throws value error if invalid ref_type given"""
         with self.assertRaises(ValueError):
             CypherQuerySource("queries.cql", "not_cypher_or_tabular", 10)
 
@@ -46,11 +46,11 @@ class CypherQuerySourceTestCase(unittest.TestCase):
         """__repr__ should be as expected."""
         s1 = CypherQuerySource("queries.cql", "cypher", 10)
         self.assertEqual(str(s1), 
-            "form: cypher\nindex: 10\nref: queries.cql")
+            "ref_type: cypher\nindex: 10\nref: queries.cql")
 
         s2 = CypherQuerySource(self.demo_table, "tabular", 2)
         self.assertEqual(str(s2), 
-            "form: tabular\nindex: 2\nref: " \
+            "ref_type: tabular\nindex: 2\nref: " \
             "   cond     end   start\n0   low  state2  state1\n"\
             "1  high  state3  state2")
 

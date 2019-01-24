@@ -30,6 +30,9 @@ have had their parameters replaced with appropriate concrete values.
   doing.
 
 *** Use Cases
+:PROPERTIES:
+:CUSTOM_ID: cymod-v0.1-use-cases
+:END:
 **** UC1: Load model specified by Cypher files into Neo4j server
 :PROPERTIES:
 :CUSTOM_ID: cymod-v0.1-UC1
