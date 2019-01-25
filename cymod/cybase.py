@@ -58,6 +58,24 @@ class CypherQuery(object):
         self.params = params
         self.source = source    
 
+    def __repr__(self):
+        return "[statement: " + self.statement + "\n params: " + \
+            str(self.params) + "\n source: " + str(self.source) + "]"
+
+    def __eq__(self, other):
+        """Override the default Equals behavior"""
+        if isinstance(other, self.__class__):
+            return self.statement == other.statement \
+                and self.params == other.params \
+                and self.source == other.source
+        return False
+
+    def __ne__(self, other):
+        """Override the default Unequal behavior"""
+        return self.statement != other.statement \
+                or self.params != other.params \
+                or self.source != other.source
+
 
 class CypherParams(object):
     """Container for Cypher parameters.
