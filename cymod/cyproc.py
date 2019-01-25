@@ -152,14 +152,6 @@ class CypherFile(object):
         self._cached_data = self._parse_queries()
 
     @property
-    def params(self):
-        """dict: Cypher parameters identified in file."""
-        if not(self._cached_data):
-            self._cached_data = self._parse_queries()
-
-        return self._cached_data['params']
-
-    @property
     def queries(self):
         """tuple of :obj:`CypherQuery`: Cypher queries identified in file."""
         if not(self._cached_data):
