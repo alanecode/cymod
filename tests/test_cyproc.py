@@ -8,6 +8,7 @@ import shutil, tempfile
 from os import path
 import json
 import unittest
+import difflib
 
 import pandas as pd
 from cymod.cyproc import (CypherParams, CypherQuery, CypherQuerySource, 
@@ -291,7 +292,7 @@ class CypherFileTestCase(unittest.TestCase):
         cf = CypherFile(self.three_query_explicit_cypher_file_name)
         self.assertEqual(cf.queries[0].statement,
             'MERGE (n1:TestNode {role:"influencer", name:"Sue"})' +
-            '-[:INFLUENCES]->' + # newlines removed
+            '-[:INFLUENCES]-> ' + # newlines replaced with spaces 
             '(n2:TestNode {name:"Billy", role:"follower"});')
 
         self.assertEqual(cf.queries[1].statement,
@@ -315,11 +316,11 @@ class CypherFileTestCase(unittest.TestCase):
 
         self.assertEqual(cf.queries[0].statement,
             'MERGE (n1:TestNode {role:"influencer", name:$name1})' +
-            '-[:INFLUENCES]->' +
+            '-[:INFLUENCES]-> ' +
             '(n2:TestNode {name:"Billy", role:"follower"});')
 
         self.assertEqual(cf.queries[1].statement,
-            'MATCH (n:TestNode {role:"influencer"})\n' +
+            'MATCH (n:TestNode {role:"influencer"}) ' +
             'MERGE (n)-[:INFLUENCES]->(:TestNode {role:"follower", ' +
             'name:$name2});')
 
@@ -335,11 +336,11 @@ class CypherFileTestCase(unittest.TestCase):
 
         self.assertEqual(cf.queries[0].statement,
             'MERGE (n1:TestNode {role:"influencer", name:$name1})' +
-            '-[:INFLUENCES]->' +
+            '-[:INFLUENCES]-> '# newline replaced with space +
             '(n2:TestNode {name:"Billy", role:"follower"});')
 
         self.assertEqual(cf.queries[1].statement,
-            'MATCH (n:TestNode {role:"influencer"})\n' +
+            'MATCH (n:TestNode {role:"influencer"}) ' +
             'MERGE (n)-[:INFLUENCES]->(:TestNode {role:"follower", ' +
             'name:$name2});')
 
@@ -350,10 +351,7 @@ class CypherFileTestCase(unittest.TestCase):
 
         self.assertEqual(cf.queries[1].params, {"name2": None}, 
             "No relevant parameters specified in file")        
-    
-    def exclude_test_check_write_test_cypher_file(self):
-        with open(self.two_query_partial_param_cypher_file_name, "r") as f:
-            print(f.read())
+
 
 
 
