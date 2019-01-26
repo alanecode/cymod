@@ -11,67 +11,7 @@ import unittest
 
 import pandas as pd
 
-from cymod.cybase import (CypherQuery, CypherQuerySource,
-    CypherParams)
-
-
-class CypherParamsTestCase(unittest.TestCase):
-
-    def make_test_param_files(self):
-        self.test_param_json_file_name \
-            = path.join(self.test_dir, "test_params.json")
-       
-        with open(self.test_param_json_file_name, "w") as f:
-            f.write('{"param1": 10, "param2": "some_string", "param3": true}')
-
-    def setUp(self):
-        # Create a temporary directory
-        self.test_dir = tempfile.mkdtemp()
-        self.make_test_param_files()
-
-    def tearDown(self):
-        # Remove the temp directory after the test
-        shutil.rmtree(self.test_dir)
-            
-    def test_init_by_dict(self):
-        """Should be able to initialise CypherParams with a dictionary."""
-        cp = CypherParams({"param1": 10, "param2": "some_string"})
-        self.assertEqual(cp["param1"], 10)
-        self.assertEqual(cp["param2"], "some_string")
-
-    def test_init_by_file(self):
-        """Should be able to initialise CypherParams with a file name."""
-        cp = CypherParams(self.test_param_json_file_name)
-        self.assertEqual(cp["param1"], 10)
-        self.assertEqual(cp["param2"], "some_string")
-        self.assertEqual(cp["param3"], True)
-
-    def test_can_add_items_to_params(self):
-        """Should be able to add value like a dict."""
-        cp = CypherParams({})
-        cp["param1"] = 2
-        self.assertEqual(cp["param1"], 2)
-
-    def test_can_only_use_string_as_key(self):
-        """Should throw a type error if key anything other than string."""
-        with self.assertRaises(TypeError):
-            CypherParams({1: "key_is_bad"})
-
-        with self.assertRaises(TypeError):
-            CypherParams({True: "key_is_bad"})
-
-        self.assertEqual(CypherParams({"param1": "key_is_okay"})["param1"],
-            "key_is_okay")
-
-    def test_can_get_list_of_keys(self):
-        """Should be able to get a list of parameter keys"""
-        cp = CypherParams({"param1": 0, "param2": "one"})
-        self.assertEqual(set(cp.keys()), set(["param1", "param2"]))
-
-    def test_can_retrieve_dictionary(self):
-        """Should be able to retrieve data as a vanilla dictionary."""
-        cp = CypherParams({"param1": 0, "param2": "one"})
-        self.assertEqual(cp.as_dict(), {"param2": "one", "param1": 0})
+from cymod.cybase import CypherQuery, CypherQuerySource
 
 class CypherQuerySourceTestCase(unittest.TestCase):
     def setUp(self):
