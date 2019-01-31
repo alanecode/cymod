@@ -8,7 +8,8 @@ import unittest
 
 import pandas as pd
 
-from cymod.cybase import CypherQuery, CypherQuerySource
+from cymod.cybase import CypherQuery
+from cymod.tabproc import TransTableProcessor
 
 class TransTableProcessorTestCase(unittest.TestCase):
     def setUp(self):
@@ -23,7 +24,7 @@ class TransTableProcessorTestCase(unittest.TestCase):
 
     def test_explicit_codes_queries_correct(self):
         """TransTableProcessorTestCase.iterqueries() yields correct queries."""
-        ttp = TransTableProcessorTestCase(self.demo_explicit_table,
+        ttp = TransTableProcessor(self.demo_explicit_table,
             "start", "end")
         query_iter = ttp.iterqueries()
 
