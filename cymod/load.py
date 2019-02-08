@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""graphloader.py
+"""
+cymod.load
+~~~~~~~~~~
 
 Loads Cypher files and uses them to construct and execute a database
 transaction.
