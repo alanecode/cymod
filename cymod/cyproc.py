@@ -8,8 +8,10 @@ system, and to generate Cypher to represent data contained in
 :obj:`pandas.DataFrame` objects.
 """
 from __future__ import print_function
+import os
 import re
 import json
+import warnings
 
 import six
 
@@ -183,4 +185,71 @@ class CypherFile(object):
                 params=self._match_params_to_statement(statement, dat[0]),
                 source=CypherQuerySource(self.filename, "cypher", i)))
 
+        if len(query_list) == 0:
+            warnings.warn("No queries found in " + self.filename, UserWarning)
+
         return query_list
+
+
+class CypherFileFinder(object):
+    """Searcher to find Cypher files in the provided root directory.
+
+    Reaches outwards from a specified root directory an collects all Cypher
+    files within reach.
+
+    Args:
+        root_dir (str): File system path to root directory to search for Cypher
+            files.
+        cypher_exts (:obj:`list` of :obj:`str`, optional): A list of strings 
+            specifying file extensions which should be taken to denote a file 
+            containing Cypher queries. Defaults to [".cypher", ".cql", ".cyp"].
+        fname_suffix (str): Suffix at the end of file names (excluding file
+            extension) which indicates file should be loaded into the database.
+            e.g. if files ending '_w.cql' should be loaded, use
+            fname_suffix='_w'. Defaults to None.
+    """
+
+    def __init__(self, root_dir, cypher_exts=[".cypher", ".cql", ".cyp"],
+                 cypher_file_suffix=None):
+        self.root_dir = root_dir
+        self.cypher_exts = cypher_exts
+        self.cypher_file_suffix = cypher_file_suffix
+
+    def _get_cypher_files(self):
+        """Get all applicable Cypher files in directory hierarchy.
+
+        Returns:
+            :obj:`list` of :obj:`CypherFile`: A list of Cypher file objects
+                ready for subsequent processing.
+
+        """
+        fnames = []
+        for dirpath, subdirs, files in os.walk(self.root_dir):
+            for f in files:
+                if f.endswith(tuple(self.cypher_exts)):
+                    if self.cypher_file_suffix:
+                        test_suffix \
+                            = f.split('.')[0][-len(self.cypher_file_suffix):]
+                        if test_suffix == self.cypher_file_suffix:
+                            fnames.append(os.path.join(dirpath, f))
+                    else:
+                        # if no fname_suffix specified, all all cypher files
+                        fnames.append(os.path.join(dirpath, f))
+
+        return [CypherFile(f) for f in fnames]
+
+
+    def iterfiles(self):
+        """Yields CypherFile objects representing discovered files."""
+        # TODO Refactor so there is never a complete list of files processed
+        # as is currently done in self._get_cypher_files()
+        files = self._get_cypher_files()
+        while files:
+            yield files.pop(0)
+
+    def __repr__(self):
+        s = "[\n"
+        for f in self.iterfiles():
+            s += f.filename + "\n"
+        return s+ "]"
+

@@ -5,12 +5,22 @@ Tests for cymod.cyproc
 from __future__ import print_function
 
 import shutil, tempfile
+import os
 from os import path
 import json
 import unittest
+import warnings
 
-from cymod.cyproc import CypherFile
+from cymod.cyproc import CypherFile, CypherFileFinder
 from cymod.cybase import CypherQuery, CypherQuerySource
+
+def touch(path):
+    """Immitate *nix `touch` behaviour, creating directories as required."""
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    with open(path, "a"):
+        os.utime(path, None)
 
 class CypherFileTestCase(unittest.TestCase):
 
@@ -230,9 +240,126 @@ class CypherFileTestCase(unittest.TestCase):
         self.assertEqual(cf.queries[0].params, {"name1": "Sue"})
 
         self.assertEqual(cf.queries[1].params, {"name2": None}, 
-            "No relevant parameters specified in file")        
+            "No relevant parameters specified in file")
+
+    def test_extant_but_empty_file_gives_warning(self):
+        """If a Cypher file doesn't contain any queries it should warn user."""
+        empty_fname = os.path.join(self.test_dir, "empty.cql")                
+        touch(empty_fname)
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger the warning
+            CypherFile(empty_fname)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert "No queries found in " + empty_fname \
+                == str(w[-1].message)
 
 
+
+class CypherFileFinderTestCase(unittest.TestCase):
+
+    def make_empty_dummy_files(self, root_dir, fname_list):
+        """Creates empty files with the names given in fname_list."""
+        for fname in fname_list:
+            touch(os.path.join(root_dir, fname))
+
+    def setUp(self):
+        # Create a temporary directory
+        self.test_dir = tempfile.mkdtemp()
+
+    def test_files_in_arbitrary_dir_depth_found(self):
+        """CypherFileFinder should explore to leaves of directory tree."""
+        dummy_files = [
+            path.join("dir1", "dir_1_1", "dir_1_1_1", "queries1.cql"), 
+            path.join("dir1", "dir_1_2", "queries2.cql"), 
+            path.join("dir2", "queries3.cql")]
+
+        self.make_empty_dummy_files(self.test_dir, dummy_files)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cff = CypherFileFinder(self.test_dir)
+        
+            self.assertEqual(len(list(cff.iterfiles())), 3)
+
+
+    def test_default_cypher_file_extensions_recognised(self):
+        """Exts .cypher, .cql and .cyp should be recognised by default."""
+        dummy_files = [path.join("dir1", "queries1.cypher"), 
+            path.join("dir1", "queries2.cql"), 
+            path.join("dir2", "queries3.cyp"),
+            path.join("dir2", "exclude_queries.notcypher")]
+
+        self.make_empty_dummy_files(self.test_dir, dummy_files)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cff = CypherFileFinder(self.test_dir)
+        
+            self.assertEqual(len(list(cff.iterfiles())), 3)
+
+
+    def test_custom_cypher_file_extension_can_be_used(self):
+        """User can specify use of custom file name extension .mycypher."""
+        dummy_files = [path.join("dir1", "queries1.mycypher"), 
+            path.join("dir1", "queries2.mycypher"), 
+            path.join("dir2", "exclude_queries.notcypher")]
+        
+        self.make_empty_dummy_files(self.test_dir, dummy_files)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cff = CypherFileFinder(self.test_dir, cypher_exts=[".mycypher"])
+        
+            self.assertEqual(len(list(cff.iterfiles())), 2)
+
+
+    def test_cypher_file_suffix_recognised(self):
+        """User can specify file name suffix to filter files to load."""
+        dummy_files = [path.join("dir1", "queries1_w.cql"), 
+            path.join("dir1", "exclude_queries2.cql"), 
+            path.join("dir2", "queries3_w.cql")]
+
+        self.make_empty_dummy_files(self.test_dir, dummy_files)
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cff = CypherFileFinder(self.test_dir, cypher_file_suffix="_w")
+        
+            self.assertEqual(len(list(cff.iterfiles())), 2)
+
+    def test_repr_is_as_expected(self):
+        dummy_files = [path.join("dir1", "queries1.cql"), 
+            path.join("dir2", "queries2.cql")]
+
+        self.make_empty_dummy_files(self.test_dir, dummy_files)
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cff = CypherFileFinder(self.test_dir)
+
+        exp_repr = "[\n{0}\n{1}\n]".format(
+            path.join(self.test_dir, "dir1", "queries1.cql"),
+            path.join(self.test_dir, "dir2", "queries2.cql"))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.assertEqual(repr(cff), exp_repr)
+
+        
+
+
+
+    
+
+
+
+
+
+
+    
 
 
 
