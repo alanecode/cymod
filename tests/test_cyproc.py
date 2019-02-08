@@ -348,23 +348,53 @@ class CypherFileFinderTestCase(unittest.TestCase):
             warnings.simplefilter("ignore")
             self.assertEqual(repr(cff), exp_repr)
 
+    def test_can_sort_files_by_priority(self):
+        """Should sort files so they emerge in priority order.
         
+        Correct order is:
+        1. queries1.cql OR queries5.cql
+        2. queries1.cql OR queries5.cql
+        3. queries3.cql OR queries4.cql
+        4. queries3.cql OR queries4.cql
+        5. queries2.cql
+        
+        """
+        f1_name = path.join(self.test_dir, "queries1.cql")
+        with open(f1_name, "w") as f:
+            f.write('{ "priority": 0 }')
 
+        f2_name = path.join(self.test_dir, "queries2.cql")
+        with open(f2_name, "w") as f:
+            f.write('{ "priority": 3 }')
 
+        f3_name = path.join(self.test_dir, "queries3.cql")
+        with open(f3_name, "w") as f:
+            f.write('{ "priority": 1 }')
 
-    
+        f4_name = path.join(self.test_dir, "queries4.cql")
+        with open(f4_name, "w") as f:
+            f.write('{ "priority": 1 }')
 
+        f5_name = path.join(self.test_dir, "queries5.cql")
+        touch(f5_name) # should be assumed priority 0
 
+        cff = CypherFileFinder(self.test_dir)
+        file_iter = cff.iterfiles(priority_sorted=True)
 
+        this_fname = file_iter.next().filename
+        self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
 
+        this_fname = file_iter.next().filename
+        self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
 
+        this_fname = file_iter.next().filename
+        self.assertTrue((this_fname == f3_name) or (this_fname == f4_name))
 
-    
+        this_fname = file_iter.next().filename
+        self.assertTrue((this_fname == f3_name) or (this_fname == f4_name))
 
+        this_fname = file_iter.next().filename
+        self.assertTrue(this_fname == f2_name)
 
-
-
-
-
-
-
+        with self.assertRaises(StopIteration):
+            file_iter.next()
