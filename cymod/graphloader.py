@@ -28,7 +28,7 @@ from six import iteritems, iterkeys
 from neo4j.v1 import GraphDatabase
 from neo4j.exceptions import CypherSyntaxError
 
-from cymod.filesystem import CypherFileFinder
+from cymod.cyproc import CypherFileFinder
 
 
 class GraphLoader(object):
@@ -62,8 +62,8 @@ class GraphLoader(object):
         """Load a list of Cypher files to be loaded into the Graph.
 
         Returns list of CypherFile-s"""
-        cff = CypherFileFinder(root_dir, fname_suffix=fname_suffix)
-        return cff.get_cypher_files()
+        cff = CypherFileFinder(root_dir, cypher_file_suffix=fname_suffix)
+        return list(cff.iterfiles())
 
     def _get_sorted_cypher_files(self, unsorted_cypher_files):
         """Create a stack of CypherFile objects oredered ready to be loaded.
