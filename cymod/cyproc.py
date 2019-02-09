@@ -249,11 +249,13 @@ class CypherFileFinder(object):
         return [CypherFile(f) for f in fnames]
 
 
-    def iterfiles(self):
+    def iterfiles(self, priority_sorted=False):
         """Yields CypherFile objects representing discovered files."""
         # TODO Refactor so there is never a complete list of files processed
         # as is currently done in self._get_cypher_files()
         files = self._get_cypher_files()
+        if priority_sorted:
+            files.sort(key=lambda file: file.priority)
         while files:
             yield files.pop(0)
 

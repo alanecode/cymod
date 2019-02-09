@@ -242,6 +242,15 @@ class CypherFileTestCase(unittest.TestCase):
         self.assertEqual(cf.queries[1].params, {"name2": None}, 
             "No relevant parameters specified in file")
 
+    def test_params_specifications_allowed(self):
+        """Confirm various allowed parameter specifications register."""
+        f1_name = path.join(self.test_dir, "queries1.cql")
+        with open(f1_name, "w") as f:
+            f.write('{ "priority": 1, "other_param": "some value" }\n'\
+                + 'MATCH (n) RETURN n;')
+        cf = CypherFile(f1_name)
+        self.assertEqual(cf.priority, 1)
+
     def test_extant_but_empty_file_gives_warning(self):
         """If a Cypher file doesn't contain any queries it should warn user."""
         empty_fname = os.path.join(self.test_dir, "empty.cql")                
@@ -361,19 +370,19 @@ class CypherFileFinderTestCase(unittest.TestCase):
         """
         f1_name = path.join(self.test_dir, "queries1.cql")
         with open(f1_name, "w") as f:
-            f.write('{ "priority": 0 }')
+            f.write('{ "priority": 0 }\nMATCH (n) RETURN n;')
 
         f2_name = path.join(self.test_dir, "queries2.cql")
         with open(f2_name, "w") as f:
-            f.write('{ "priority": 3 }')
+            f.write('{ "priority": 3 }\nMATCH (n) RETURN n;')
 
         f3_name = path.join(self.test_dir, "queries3.cql")
         with open(f3_name, "w") as f:
-            f.write('{ "priority": 1 }')
+            f.write('{ "priority": 1 }\nMATCH (n) RETURN n;')
 
         f4_name = path.join(self.test_dir, "queries4.cql")
         with open(f4_name, "w") as f:
-            f.write('{ "priority": 1 }')
+            f.write('{ "priority": 1 }\nMATCH (n) RETURN n;')
 
         f5_name = path.join(self.test_dir, "queries5.cql")
         touch(f5_name) # should be assumed priority 0
@@ -381,11 +390,14 @@ class CypherFileFinderTestCase(unittest.TestCase):
         cff = CypherFileFinder(self.test_dir)
         file_iter = cff.iterfiles(priority_sorted=True)
 
-        this_fname = file_iter.next().filename
-        self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
 
-        this_fname = file_iter.next().filename
-        self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
+            this_fname = file_iter.next().filename
+            self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
+
+            this_fname = file_iter.next().filename
+            self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
 
         this_fname = file_iter.next().filename
         self.assertTrue((this_fname == f3_name) or (this_fname == f4_name))
