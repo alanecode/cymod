@@ -190,6 +190,16 @@ class CypherFile(object):
 
         return query_list
 
+    def __repr__(self):
+        # filename, prioriry, queries
+        fname_str = "file name: " + self.filename 
+        priority_str = "priority: " + str(self.priority)
+        queries_str = "queries:\n"
+        for q in self.queries:
+            queries_str += repr(q) + "\n"
+        return "[\n" + fname_str + "\n" + priority_str + "\n" \
+            + queries_str + "]"        
+
 
 class CypherFileFinder(object):
     """Searcher to find Cypher files in the provided root directory.

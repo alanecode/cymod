@@ -60,7 +60,7 @@ class CypherQuery(object):
 
     def __repr__(self):
         return "[statement: " + self.statement + "\n params: " + \
-            str(self.params) + "\n source: " + str(self.source) + "]"
+            str(self.params) + "\n source: [\n" + str(self.source) + "]\n]"
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
