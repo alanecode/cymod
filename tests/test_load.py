@@ -12,6 +12,14 @@ import warnings
 
 from cymod.load import GraphLoader
 
+def touch(path):
+    """Immitate *nix `touch` behaviour, creating directories as required."""
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    with open(path, "a"):
+        os.utime(path, None)
+
 def write_query_set_1_to_file(fname):
     s = '{ "priority": 1 }\n'\
         'MERGE (n:TestNode {test_bool: true})'
@@ -115,7 +123,12 @@ class GraphLoaderTestCase(unittest.TestCase):
         then all queries based on the second.
         """
         dir1 = path.join(self.test_dir, "dir1")
+        if not os.path.exists(dir1):
+            os.makedirs(dir1)
+        
         dir2 = path.join(self.test_dir, "dir2")
+        if not os.path.exists(dir2):
+            os.makedirs(dir2)
 
         file1 = path.join(dir1, "file1.cql")
         write_query_set_1_to_file(file1) # in dir1
