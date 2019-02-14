@@ -116,13 +116,9 @@ class GraphLoader(object):
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
 
-    def __init__(self, uri, username, password, root_dir, fname_suffix,
-                 global_param_file=None, refresh_graph=False):
-        super(ServerGraphLoader, self).__init__(root_dir,
-                                                fname_suffix,
-                                                global_param_file)
+    def __init__(self, username, password, uri="bolt://localhost:7687"):
+        super(ServerGraphLoader, self).__init__()
         self.driver = self._get_graph_driver(uri, username, password)
-        self.refresh_graph = refresh_graph
 
     def _get_graph_driver(self, uri, username, password):
         """Attempt to obtain a driver for Neo4j server.
@@ -143,7 +139,7 @@ class ServerGraphLoader(GraphLoader):
             print('Exception: %s' % str(e), file=sys.stderr)
             sys.exit(1)
 
-    def _refresh_graph(self):
+    def refresh_graph(self, global_params):
         """Delete nodes in the graph with the global parameters of this model.
 
         For cases where we want to update the model specified by the
@@ -176,12 +172,18 @@ class ServerGraphLoader(GraphLoader):
 
         with self.driver.session() as session:
             try:
-                session.write_transaction(remove_all_nodes, self.global_params)
+                session.write_transaction(remove_all_nodes, global_params)
             except CypherSyntaxError as e:
                 print('Error in Cypher refreshing database. Check syntax.',
                       file=sys.stderr)
                 print('Exception: %s' % str(e), file=sys.stderr)
                 sys.exit(1)
+
+    def commit(self):
+        """Load all Cypher queries into the graph."""
+        for cypher_query in self.iterqueries():
+            with self.driver.session() as session:
+                session.run(cypher_query.statement, cypher_query.params)
 
     def _load_cypher_file_queries(self, cypher_file):
         """Load all queries in an individual cypher file into the graph."""
@@ -194,22 +196,6 @@ class ServerGraphLoader(GraphLoader):
         with self.driver.session() as session:
             for q in cypher_file.queries:
                 session.write_transaction(run_cypher_file_query, q, params)
-
-    def load_cypher(self):
-        """Load all Cypher files into the graph."""
-        # Creating a copy of the cypher files list avoids side effect of
-        # erasing list of files to be loaded during the course of loading
-        files = list(self.cypher_files)
-        num_files = len(files)
-        if self.refresh_graph:
-            self._refresh_graph()
-
-        while files:
-            f = files.pop()
-            print('loading '+os.path.basename(f.filename))
-            self._load_cypher_file_queries(f)
-
-        print('\nFinished loading {0} Cypher files'.format(num_files))
 
 
 class EmbeddedGraphLoader(GraphLoader):
