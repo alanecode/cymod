@@ -16,3 +16,6 @@ cymod.egg-info/*
 /model/.project
 /model/cymod.pdf
 /model/cymod.uml
+
+# temporary demo file
+demo.py
