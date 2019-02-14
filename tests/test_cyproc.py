@@ -209,9 +209,9 @@ class CypherFileTestCase(unittest.TestCase):
     def test_explicit_statement_file_has_expected_params(self):
         """Cypher file with three explicit statements has no params."""
         cf = CypherFile(self.three_query_explicit_cypher_file_name)
-        self.assertEqual(cf.queries[0].params, None)
-        self.assertEqual(cf.queries[1].params, None)
-        self.assertEqual(cf.queries[2].params, None)
+        self.assertEqual(cf.queries[0].params, {})
+        self.assertEqual(cf.queries[1].params, {})
+        self.assertEqual(cf.queries[2].params, {})
 
     def test_parameterised_statement_file_has_expected_queries(self):
         """Cypher file with two parameter statements has expected queries."""

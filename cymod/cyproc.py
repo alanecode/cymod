@@ -157,9 +157,11 @@ class CypherFile(object):
             relevant_dict[param_name] = None
             if param_name in all_params.keys():
                 relevant_dict[param_name] = all_params[param_name]
-        if relevant_dict:
-            # params should be none if no matches found
+        if relevant_dict:            
             return relevant_dict
+        else:
+            # params should be empty dict if no matches found
+            return {}
 
     def _parse_queries(self):
         """Identify individual Cypher queries.

@@ -91,8 +91,9 @@ class GraphLoader(object):
                     for query in cypher_file.queries:
                         # Get list of parameters in query with None value and 
                         # attempt to replace None with value from global_params
-                        unspecified_native_params \
-                            = [k for k in query.params if not query.params[k]]
+                        unspecified_native_params = [k for k 
+                            in query.params.keys() 
+                            if not query.params[k]]
                         for unspecified_param in unspecified_native_params:
                             try:
                                 query.params[unspecified_param] \
