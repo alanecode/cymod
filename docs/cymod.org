@@ -30,6 +30,9 @@ have had their parameters replaced with appropriate concrete values.
   doing.
 
 *** Use Cases
+:PROPERTIES:
+:CUSTOM_ID: cymod-v0.1-use-cases
+:END:
 **** UC1: Load model specified by Cypher files into Neo4j server
 :PROPERTIES:
 :CUSTOM_ID: cymod-v0.1-UC1
@@ -218,7 +221,41 @@ gl.commit()
 #+END_SRC
 
 
-**** UC6: Load model specified by a coded succession transition table into Neo4j server
+**** UC6: Load model specified by a transition table into Neo4j including global parameters applied to every node
+***** Use case description
+User Dave wants to ensure each of the nodes in the model generated in [[#UC4-trans-table][UC4]] have
+two 'global parameters' assigned to them, to enable for easy selection of nodes
+with a specific ~model_ID~ and ~version~ number from within the Neo4j database
+as a whole.
+
+Dave has prepared a JSON file, ~table_global_params.json~, containing these
+parameters and saved this as part of his model code. This data can be loaded
+and inserted into the model graph, modifying the code used for [[#UC4-trans-table][UC4]] as follows:
+
+***** API usage
+#+BEGIN_SRC python
+import pandas as pd
+from cymod import ServerGraphLoader, read_params_file
+
+# Initialise ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+
+# Prepare pandas dataframe
+trans_df = pd.read_csv("model.csv")
+
+# Load json file into a dictionary, performing appropriate sense checks
+global_params = read_params_file("table_global_params.json")
+
+# Load the tabular data into the ServerGraphLoader object
+gl.load_tabular(trans_df, start_state_col="start", end_state_col="end",
+                global_params=global_params)
+
+# run these queries against the graph specified in the neo4j configuration file
+gl.commit()
+#+END_SRC
+
+
+**** UC7: Load model specified by a coded succession transition table into Neo4j server
 ***** Use case description
 Jenny has the same table to load into Neo4j server as Dave (of [[#UC4-trans-table][UC4]] fame) did
 but, being of a quantitative bent, Jenny has encoded the data using numerical
@@ -259,8 +296,7 @@ gl.load_tabular(trans_df, start_state_col="start", end_state_col="end",
                 state_alias_translator=trans)
 #+END_SRC
 
-
-**** UC7: Load model specified by a mixture of Cypher files and a natural language succession table into Neo4j server
+**** UC8: Load model specified by a mixture of Cypher files and a natural language succession table into Neo4j server
 
 ***** Use case description
 Emma has a model which embellishes the table Dave made in [[#UC4-trans-table][UC4]] with some Cypher
@@ -302,14 +338,14 @@ gl.commit()
 Supports loading cypher files with new API (UC1 - UC3)
 
 **** v0.0.4
-Supports loading natural language succession table (UC4 - UC5)
+Supports loading natural language succession table including custom node labels
+and/or global parameters (UC4 - UC6)
 
-**** v0.0.5 
-Supports coded succession table (UC6)
+**** v0.0.5
+Supports coded succession table (UC7)
 
 **** v0.0.6 / v0.1.0
 Adds support for python 3
-
 
 ** Version 0.2
 *** Completion criteria

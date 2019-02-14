@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""graphloader.py
+"""
+cymod.load
+~~~~~~~~~~
 
 Loads Cypher files and uses them to construct and execute a database
 transaction.
@@ -28,115 +30,95 @@ from six import iteritems, iterkeys
 from neo4j.v1 import GraphDatabase
 from neo4j.exceptions import CypherSyntaxError
 
-from cymod.filesystem import CypherFileFinder
+from cymod.cyproc import CypherFileFinder
 
 
 class GraphLoader(object):
-    """Retrieve all Cypher data from the file system.
+    """Process requests to load data from files, generate a stream of queries.
 
-    Also stores information about parameters if given.
+    Attributes:
+        _load_job_queue (list of :obj:`CypherFileFinder`): A queue containing
+            objects which should be handled in order to generate cypher 
+            queries.             
     """
-    def __init__(self, root_dir, fname_suffix, global_param_file=None):
-        self.global_param_file = global_param_file
-        self.global_params = self._load_global_params()
-        self.cypher_files = self._get_sorted_cypher_files(
-            self._get_cypher_files(root_dir, fname_suffix))
+    def __init__(self):
+        self._load_job_queue = [] 
 
-    def _load_global_params(self):
-        """Read global parameters from instance's global_param_file.
-
-        Global parameters will be provided to all queries executed while
-        loading the graph. These should be provided in a json file.
-
-        Returns:
-            dict: Key/value pairs specifying global parameters.
-
-        """
-        if self.global_param_file:
-            with open(self.global_param_file, 'r') as f:
-                return json.load(f)
-        else:
-            return dict()
-
-    def _get_cypher_files(self, root_dir, fname_suffix):
-        """Load a list of Cypher files to be loaded into the Graph.
-
-        Returns list of CypherFile-s"""
-        cff = CypherFileFinder(root_dir, fname_suffix=fname_suffix)
-        return cff.get_cypher_files()
-
-    def _get_sorted_cypher_files(self, unsorted_cypher_files):
-        """Create a stack of CypherFile objects oredered ready to be loaded.
-
-        Priority 0 files should be at the top of the stack.
-
-        TODO: method contents. MOVE FUNCTIONALITY OF SORTING FILES BY PRIORITY
-        TO THE CypherFileFinder CLASS
-
-        """
-        def get_priority_number(cypher_file, max_priority):
-            """Return numerical value to sort cypher file priorities.
-
-            If no priority is specified for a cypher file, its `priority`
-            attribute will be None. To account for this when sorting, all files
-            which have not been given a priority are given the same
-            `max_priority` value. In practice this can always be safely set to
-            the total number of files.
-
-            Files are sorted so highest priority files are at the end of the
-            resulting list, i.e. are at the top of the stack.
-
-            """
-            p = cypher_file.priority
-            if isinstance(p, int):
-                return p
-            else:
-                return max_priority
-
-        n = len(unsorted_cypher_files)
-        return sorted(unsorted_cypher_files,
-                      key=lambda f: get_priority_number(f, n), reverse=True)
-
-    def _get_joint_params(self, cypher_file):
-        """Unite file-local and global parameters into a single dict."""
-        if cypher_file.params:
-            params = cypher_file.params.copy()
-        else:
-            params = {}
-        params.update(self.global_params)
-        return params
-
-    def _parse_query_params(self, query, params):
-        """Construct a query from parameterised query and parameters.
-
-        Given an individual Cypher query and a dictionary of corresponding
-        parameters, return a string in which the parameters have been
-        substituted into the query.
+    def load_cypher(self, root_dir, cypher_file_suffix=None, 
+        global_params=None):
+        """Add Cypher files to the list of jobs to be loaded.
         
         Args:
-            query (str): The parameterised query string
-            params (dict): Key/value pairs where the keys are parameter names
-                appearing in the parameterised query, and the values are the
-                values to be substituted in.
-        Returns:
-            query_string (str): Complete query with concrete values replacing
-            parameters.
+            root_dir (str): File system path to root directory to search for 
+                Cypher files.
+            cypher_file_suffix (str): Suffix at the end of file names 
+                (excluding file extension) which indicates file should be 
+                loaded into the database. E.g. if files ending '_w.cql' 
+                should be loaded, use cypher_file_suffix='_w'. Defaults to 
+                None.        
         """
-        for k in iterkeys(params):
-            query = query.replace('$'+str(k), '"'+str(params[k])+'"')
-        return query
+        cff = CypherFileFinder(root_dir, cypher_file_suffix=cypher_file_suffix)
+        if global_params:
+            self._load_job_queue.append(
+                {"file_finder": cff, "global_params": global_params})
+        else:
+            self._load_job_queue.append(cff)
+
+    def iterqueries(self):
+        """Provide an iterable over Cypher queries from loaded sources.
+
+        TODO Refactor by delegating the processing of glibal parameters to 
+            class methods.
+
+        TODO Use a switch case to handle different instance cases to improve
+            readability
+
+        Yields:
+            :obj:`CypherQuery`: Appropriately ordered Cypher queries.        
+        
+        """
+        for load_job in self._load_job_queue:
+            if isinstance(load_job, CypherFileFinder):
+                for cypher_file in load_job.iterfiles(priority_sorted=True):
+                    for query in cypher_file.queries:
+                        yield query
+
+            if isinstance(load_job, dict):
+                # Case where load_job is a CypherFileFinder with global params
+                cff = load_job["file_finder"]
+                global_params = load_job["global_params"]
+                for cypher_file in cff.iterfiles(priority_sorted=True):
+                    for query in cypher_file.queries:
+                        # Get list of parameters in query with None value and 
+                        # attempt to replace None with value from global_params
+                        unspecified_native_params = [k for k 
+                            in query.params.keys() 
+                            if not query.params[k]]
+                        for unspecified_param in unspecified_native_params:
+                            try:
+                                query.params[unspecified_param] \
+                                    = global_params[unspecified_param]
+                            except KeyError:
+                                # Raise an exception if a query has a required 
+                                # None parameter at this stage
+                                raise KeyError("The following query requires "\
+                                    + "a parameter not given in its "\
+                                    + "originating Cypher file, nor in the "\
+                                    + "provided global parameters:\n"\
+                                    + str(query))
+                        yield query
+
+            else:
+                # assumed load_job is a tabular data source
+                pass
 
 
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
 
-    def __init__(self, uri, username, password, root_dir, fname_suffix,
-                 global_param_file=None, refresh_graph=False):
-        super(ServerGraphLoader, self).__init__(root_dir,
-                                                fname_suffix,
-                                                global_param_file)
+    def __init__(self, username, password, uri="bolt://localhost:7687"):
+        super(ServerGraphLoader, self).__init__()
         self.driver = self._get_graph_driver(uri, username, password)
-        self.refresh_graph = refresh_graph
 
     def _get_graph_driver(self, uri, username, password):
         """Attempt to obtain a driver for Neo4j server.
@@ -157,7 +139,7 @@ class ServerGraphLoader(GraphLoader):
             print('Exception: %s' % str(e), file=sys.stderr)
             sys.exit(1)
 
-    def _refresh_graph(self):
+    def refresh_graph(self, global_params):
         """Delete nodes in the graph with the global parameters of this model.
 
         For cases where we want to update the model specified by the
@@ -190,12 +172,18 @@ class ServerGraphLoader(GraphLoader):
 
         with self.driver.session() as session:
             try:
-                session.write_transaction(remove_all_nodes, self.global_params)
+                session.write_transaction(remove_all_nodes, global_params)
             except CypherSyntaxError as e:
                 print('Error in Cypher refreshing database. Check syntax.',
                       file=sys.stderr)
                 print('Exception: %s' % str(e), file=sys.stderr)
                 sys.exit(1)
+
+    def commit(self):
+        """Load all Cypher queries into the graph."""
+        for cypher_query in self.iterqueries():
+            with self.driver.session() as session:
+                session.run(cypher_query.statement, cypher_query.params)
 
     def _load_cypher_file_queries(self, cypher_file):
         """Load all queries in an individual cypher file into the graph."""
@@ -208,22 +196,6 @@ class ServerGraphLoader(GraphLoader):
         with self.driver.session() as session:
             for q in cypher_file.queries:
                 session.write_transaction(run_cypher_file_query, q, params)
-
-    def load_cypher(self):
-        """Load all Cypher files into the graph."""
-        # Creating a copy of the cypher files list avoids side effect of
-        # erasing list of files to be loaded during the course of loading
-        files = list(self.cypher_files)
-        num_files = len(files)
-        if self.refresh_graph:
-            self._refresh_graph()
-
-        while files:
-            f = files.pop()
-            print('loading '+os.path.basename(f.filename))
-            self._load_cypher_file_queries(f)
-
-        print('\nFinished loading {0} Cypher files'.format(num_files))
 
 
 class EmbeddedGraphLoader(GraphLoader):

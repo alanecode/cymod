@@ -40,5 +40,5 @@ Problem:
 """
 from __future__ import print_function
 
-from cymod.graphloader import ServerGraphLoader
-from cymod.graphloader import EmbeddedGraphLoader
+from cymod.load import ServerGraphLoader
+from cymod.load import EmbeddedGraphLoader
