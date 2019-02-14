@@ -130,7 +130,7 @@ class CypherFile(object):
                  
             return param_dict, queries
         except UnboundLocalError:
-            return None, dat
+            return {}, dat
 
     def _match_params_to_statement(self, statement, all_params):
         """Return a dict of parameter_name: parameter value pairs.
@@ -153,7 +153,7 @@ class CypherFile(object):
         relevant_dict = {}
         r = re.compile(r"(\$)([a-zA-Z1-9]*)")
         for match in r.finditer(statement):
-            param_name = match.group(2)
+            param_name = match.group(2) # param name excluding $ sign
             relevant_dict[param_name] = None
             if param_name in all_params.keys():
                 relevant_dict[param_name] = all_params[param_name]

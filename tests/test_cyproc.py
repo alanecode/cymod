@@ -119,6 +119,19 @@ class CypherFileTestCase(unittest.TestCase):
         with open(self.two_query_partial_param_cypher_file_name, "w") as f:
             write_two_query_partial_param_cypher_file(f)
 
+        # One parameter used in file, none specified. Single paramter must be
+        # given in global_parameters
+        write_one_query_req_global_param_cypher_file = \
+            self.dummy_cypher_file_writer_maker([
+                # statement 1
+                'MERGE (n:TestNode {test_param: $paramval});'])
+
+        self.one_query_req_global_param_cypher_file_name = path.join(
+            self.test_dir, "one_query_req_global_param.cql")
+        with open(self.one_query_req_global_param_cypher_file_name, "w") as f:
+            write_one_query_req_global_param_cypher_file(f)
+
+
         # One query file with two parameters, one of which is the special
         # 'priority' parameter which specifies the order in which files should
         # be loaded.
@@ -242,6 +255,11 @@ class CypherFileTestCase(unittest.TestCase):
         self.assertEqual(cf.queries[1].params, {"name2": None}, 
             "No relevant parameters specified in file")
 
+    def test_file_with_no_explicit_parameters_works(self):
+        """Okay to have no params specified but require global params."""
+        cf = CypherFile(self.one_query_req_global_param_cypher_file_name)
+        self.assertEqual(cf.queries[0].params, {"paramval": None})
+        
     def test_params_specifications_allowed(self):
         """Confirm various allowed parameter specifications register."""
         f1_name = path.join(self.test_dir, "queries1.cql")
