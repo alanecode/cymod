@@ -67,6 +67,12 @@ class GraphLoader(object):
     def iterqueries(self):
         """Provide an iterable over Cypher queries from loaded sources.
 
+        TODO Refactor by delegating the processing of glibal parameters to 
+            class methods.
+
+        TODO Use a switch case to handle different instance cases to improve
+            readability
+
         Yields:
             :obj:`CypherQuery`: Appropriately ordered Cypher queries.        
         
@@ -99,95 +105,11 @@ class GraphLoader(object):
                                     + "originating Cypher file, nor in the "\
                                     + "provided global parameters:\n"\
                                     + str(query))
+                        yield query
 
             else:
                 # assumed load_job is a tabular data source
                 pass
-
-
-    def _load_global_params(self):
-        """Read global parameters from instance's global_param_file.
-
-        Global parameters will be provided to all queries executed while
-        loading the graph. These should be provided in a json file.
-
-        Returns:
-            dict: Key/value pairs specifying global parameters.
-
-        """
-        if self.global_param_file:
-            with open(self.global_param_file, 'r') as f:
-                return json.load(f)
-        else:
-            return dict()
-
-    def _get_cypher_files(self, root_dir, fname_suffix):
-        """Load a list of Cypher files to be loaded into the Graph.
-
-        Returns list of CypherFile-s"""
-        cff = CypherFileFinder(root_dir, cypher_file_suffix=fname_suffix)
-        return list(cff.iterfiles())
-
-    def _get_sorted_cypher_files(self, unsorted_cypher_files):
-        """Create a stack of CypherFile objects oredered ready to be loaded.
-
-        Priority 0 files should be at the top of the stack.
-
-        TODO: method contents. MOVE FUNCTIONALITY OF SORTING FILES BY PRIORITY
-        TO THE CypherFileFinder CLASS
-
-        """
-        def get_priority_number(cypher_file, max_priority):
-            """Return numerical value to sort cypher file priorities.
-
-            If no priority is specified for a cypher file, its `priority`
-            attribute will be None. To account for this when sorting, all files
-            which have not been given a priority are given the same
-            `max_priority` value. In practice this can always be safely set to
-            the total number of files.
-
-            Files are sorted so highest priority files are at the end of the
-            resulting list, i.e. are at the top of the stack.
-
-            """
-            p = cypher_file.priority
-            if isinstance(p, int):
-                return p
-            else:
-                return max_priority
-
-        n = len(unsorted_cypher_files)
-        return sorted(unsorted_cypher_files,
-                      key=lambda f: get_priority_number(f, n), reverse=True)
-
-    def _get_joint_params(self, cypher_file):
-        """Unite file-local and global parameters into a single dict."""
-        if cypher_file.params:
-            params = cypher_file.params.copy()
-        else:
-            params = {}
-        params.update(self.global_params)
-        return params
-
-    def _parse_query_params(self, query, params):
-        """Construct a query from parameterised query and parameters.
-
-        Given an individual Cypher query and a dictionary of corresponding
-        parameters, return a string in which the parameters have been
-        substituted into the query.
-        
-        Args:
-            query (str): The parameterised query string
-            params (dict): Key/value pairs where the keys are parameter names
-                appearing in the parameterised query, and the values are the
-                values to be substituted in.
-        Returns:
-            query_string (str): Complete query with concrete values replacing
-            parameters.
-        """
-        for k in iterkeys(params):
-            query = query.replace('$'+str(k), '"'+str(params[k])+'"')
-        return query
 
 
 class ServerGraphLoader(GraphLoader):
