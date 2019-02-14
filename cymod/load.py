@@ -31,6 +31,7 @@ from neo4j.v1 import GraphDatabase
 from neo4j.exceptions import CypherSyntaxError
 
 from cymod.cyproc import CypherFileFinder
+from cymod.tabproc import TransTableProcessor
 
 
 class GraphLoader(object):
@@ -64,6 +65,10 @@ class GraphLoader(object):
         else:
             self._load_job_queue.append(cff)
 
+    def load_tabular(self, df, start_state_col, end_state_col):
+        tabular_src = TransTableProcessor(df, start_state_col, end_state_col)
+        self._load_job_queue.append(tabular_src)
+
     def iterqueries(self):
         """Provide an iterable over Cypher queries from loaded sources.
 
@@ -83,7 +88,7 @@ class GraphLoader(object):
                     for query in cypher_file.queries:
                         yield query
 
-            if isinstance(load_job, dict):
+            elif isinstance(load_job, dict):
                 # Case where load_job is a CypherFileFinder with global params
                 cff = load_job["file_finder"]
                 global_params = load_job["global_params"]
@@ -110,7 +115,8 @@ class GraphLoader(object):
 
             else:
                 # assumed load_job is a tabular data source
-                pass
+                for query in load_job.iterqueries():
+                    yield query
 
 
 class ServerGraphLoader(GraphLoader):

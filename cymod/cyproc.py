@@ -151,7 +151,7 @@ class CypherFile(object):
             dict: Parameters and values relevant for `statement`
         """
         relevant_dict = {}
-        r = re.compile(r"(\$)([a-zA-Z1-9]*)")
+        r = re.compile(r"(\$)([a-zA-Z1-9_]*)")
         for match in r.finditer(statement):
             param_name = match.group(2) # param name excluding $ sign
             relevant_dict[param_name] = None
