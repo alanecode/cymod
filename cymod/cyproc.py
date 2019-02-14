@@ -213,10 +213,11 @@ class CypherFileFinder(object):
         cypher_exts (:obj:`list` of :obj:`str`, optional): A list of strings 
             specifying file extensions which should be taken to denote a file 
             containing Cypher queries. Defaults to [".cypher", ".cql", ".cyp"].
-        fname_suffix (str): Suffix at the end of file names (excluding file
-            extension) which indicates file should be loaded into the database.
-            e.g. if files ending '_w.cql' should be loaded, use
-            fname_suffix='_w'. Defaults to None.
+        cypher_file_suffix (str): Suffix at the end of file names 
+                (excluding file extension) which indicates file should be 
+                loaded into the database. E.g. if files ending '_w.cql' 
+                should be loaded, use cypher_file_suffix='_w'. Defaults to 
+                None. 
     """
 
     def __init__(self, root_dir, cypher_exts=[".cypher", ".cql", ".cyp"],

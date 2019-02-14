@@ -34,15 +34,76 @@ from cymod.cyproc import CypherFileFinder
 
 
 class GraphLoader(object):
-    """Retrieve all Cypher data from the file system.
+    """Process requests to load data from files, generate a stream of queries.
 
-    Also stores information about parameters if given.
+    Attributes:
+        _load_job_queue (list of :obj:`CypherFileFinder`): A queue containing
+            objects which should be handled in order to generate cypher 
+            queries.             
     """
-    def __init__(self, root_dir, fname_suffix, global_param_file=None):
-        self.global_param_file = global_param_file
-        self.global_params = self._load_global_params()
-        self.cypher_files = self._get_sorted_cypher_files(
-            self._get_cypher_files(root_dir, fname_suffix))
+    def __init__(self):
+        self._load_job_queue = [] 
+
+    def load_cypher(self, root_dir, cypher_file_suffix=None, 
+        global_params=None):
+        """Add Cypher files to the list of jobs to be loaded.
+        
+        Args:
+            root_dir (str): File system path to root directory to search for 
+                Cypher files.
+            cypher_file_suffix (str): Suffix at the end of file names 
+                (excluding file extension) which indicates file should be 
+                loaded into the database. E.g. if files ending '_w.cql' 
+                should be loaded, use cypher_file_suffix='_w'. Defaults to 
+                None.        
+        """
+        cff = CypherFileFinder(root_dir, cypher_file_suffix=cypher_file_suffix)
+        if global_params:
+            self._load_job_queue.append(
+                {"file_finder": cff, "global_params": global_params})
+        else:
+            self._load_job_queue.append(cff)
+
+    def iterqueries(self):
+        """Provide an iterable over Cypher queries from loaded sources.
+
+        Yields:
+            :obj:`CypherQuery`: Appropriately ordered Cypher queries.        
+        
+        """
+        for load_job in self._load_job_queue:
+            if isinstance(load_job, CypherFileFinder):
+                for cypher_file in load_job.iterfiles(priority_sorted=True):
+                    for query in cypher_file.queries:
+                        yield query
+
+            if isinstance(load_job, dict):
+                # Case where load_job is a CypherFileFinder with global params
+                cff = load_job["file_finder"]
+                global_params = load_job["global_params"]
+                for cypher_file in cff.iterfiles(priority_sorted=True):
+                    for query in cypher_file.queries:
+                        # Get list of parameters in query with None value and 
+                        # attempt to replace None with value from global_params
+                        unspecified_native_params \
+                            = [k for k in query.params if not query.params[k]]
+                        for unspecified_param in unspecified_native_params:
+                            try:
+                                query.params[unspecified_param] \
+                                    = global_params[unspecified_param]
+                            except KeyError:
+                                # Raise an exception if a query has a required 
+                                # None parameter at this stage
+                                raise KeyError("The following query requires "\
+                                    + "a parameter not given in its "\
+                                    + "originating Cypher file, nor in the "\
+                                    + "provided global parameters:\n"\
+                                    + str(query))
+
+            else:
+                # assumed load_job is a tabular data source
+                pass
+
 
     def _load_global_params(self):
         """Read global parameters from instance's global_param_file.

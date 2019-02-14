@@ -28,13 +28,13 @@ def write_query_set_1_to_file(fname):
 
 def write_query_set_2_to_file(fname):
     s = '{ "priority": 0 }\n'\
-        + 'MERGE (n:TestNode {test_str: "test value"})\n'\
-        + 'MERGE (n:TestNode {test_int: 2})'
+        + 'MERGE (n:TestNode {test_str: "test value"});\n'\
+        + 'MERGE (n:TestNode {test_int: 2});'
     with open(fname, "w") as f:
         f.write(s)
 
 def write_query_set_3_to_file(fname):
-    s = 'MERGE (n:TestNode {test_param: $paramval})'
+    s = 'MERGE (n:TestNode {test_param: $paramval});'
     with open(fname, "w") as f:
         f.write(s)
 
