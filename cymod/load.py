@@ -163,12 +163,10 @@ class ServerGraphLoader(GraphLoader):
     def _get_graph_driver(self, uri, username, password):
         """Attempt to obtain a driver for Neo4j server.
 
-        exit program if we can't obtain a driver
+        Exit program if we can't obtain a driver.
 
-        returns a connected GraphDatabase.driver
-
-        TODO finish this docstring
-
+        Returns:
+            :obj:`GraphDatabase.driver`
         """
         try:
             driver = GraphDatabase.driver(uri,
@@ -179,19 +177,22 @@ class ServerGraphLoader(GraphLoader):
             print('Exception: %s' % str(e), file=sys.stderr)
             sys.exit(1)
 
-    def refresh_graph(self, global_params):
-        """Delete nodes in the graph with the global parameters of this model.
+    def refresh_graph(self, params):
+        """Delete nodes in the graph with properties matching given parameters.
 
-        For cases where we want to update the model specified by the
-        combination of global parameters specified in self.global_param_file
-        with new data it is necessary to first delete existing data matching
-        those parameters.
+        This is useful in cases where we want to update the model specified by 
+        a particular combination of parameters (e.g. with a particular model
+        ID).
 
-        This method will run an appropriate query to refresh thee graph ahead
-        of loading new data.
+        This method will run an appropriate query to remove old data from the
+        graph ahead of loading new data.
 
+        Args:
+            params (dict): Key/value pairs of Neo4j node properties. Nodes with
+                properties matching these values will be deleted from the 
+                graph.
         """
-        def remove_all_nodes(tx, global_params):
+        def remove_all_nodes(tx, params):
             """Remove nodes with properties specified in global_params.
 
             A callback function called by driver.session().write_transaction
@@ -205,14 +206,14 @@ class ServerGraphLoader(GraphLoader):
             # construct query string from provided global_params dict
             WHERE_CLAUSE = ' AND '.join(['n.'+str(k)+'='+'"'+str(v)+'"'
                                          for (k, v)
-                                         in iteritems(global_params)])
+                                         in iteritems(params)])
             q = 'MATCH (n) WHERE '+WHERE_CLAUSE+' DETACH DELETE n'
             print('Removing existing nodes matching global parameters')
             tx.run(q)
 
         with self.driver.session() as session:
             try:
-                session.write_transaction(remove_all_nodes, global_params)
+                session.write_transaction(remove_all_nodes, params)
             except CypherSyntaxError as e:
                 print('Error in Cypher refreshing database. Check syntax.',
                       file=sys.stderr)
@@ -220,22 +221,10 @@ class ServerGraphLoader(GraphLoader):
                 sys.exit(1)
 
     def commit(self):
-        """Load all Cypher queries into the graph."""
+        """Load all queries loaded into :obj:`GraphLoader` into the graph."""
         for cypher_query in self.iterqueries():
             with self.driver.session() as session:
                 session.run(cypher_query.statement, cypher_query.params)
-
-    def _load_cypher_file_queries(self, cypher_file):
-        """Load all queries in an individual cypher file into the graph."""
-        params = self._get_joint_params(cypher_file)
-
-        def run_cypher_file_query(tx, query_string, params):
-            """Run concrete query (no params) against session transaction."""
-            tx.run(self._parse_query_params(query_string, params))
-
-        with self.driver.session() as session:
-            for q in cypher_file.queries:
-                session.write_transaction(run_cypher_file_query, q, params)
 
 
 class EmbeddedGraphLoader(GraphLoader):
