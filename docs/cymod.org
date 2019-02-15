@@ -1,19 +1,6 @@
 #+TITLE: Cymod development planning
 
 * Versions
-** Verion 0.0.2
-*** Review of existing classes
-*** filesystem.py
-**** CypherFile
-**** CypherFileFinder
-*** graphloader.py
-**** GraphLoader
-**** EmbeddedGraphLoader
-Has one public method, query_generator(), which returns a generator whose
-.next() method returns strings consisting of individual Cypher queries which
-have had their parameters replaced with appropriate concrete values.
-**** ServerGraphLoader
-
 ** Version 0.1
 *** Completion criteria 
 - Stable API
@@ -131,14 +118,14 @@ $ cat parameters.json
 
 ***** API usage
 #+BEGIN_SRC python
-from cymod import ServerGraphLoader, CypherParams
+from cymod import ServerGraphLoader, read_params_file
 
 # initialise a ServerGraphLoader object
 gl = ServerGraphLoader(user="username", password="password")
 
 # create a CypherParams object to hold the parameters available to all 
 # cypher files
-params = CypherParams("parameters.json")
+params = read_params_file("parameters.json")
 
 # read cypher queries from files in cypher-files directory
 gl.load_cypher("cypher-files", global_params=params)
@@ -373,7 +360,6 @@ gl.commit()
 
 Note that this script would likely require root privileges to run as it will
 need to modify (and then revert) the Neo4j configuration file ~neo4j.conf~
-
 
 ** Version 0.3
 Adds functionality to supply queries to an embedded Neo4j graph instance. This
