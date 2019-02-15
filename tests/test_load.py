@@ -14,6 +14,7 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery
 from cymod.load import GraphLoader, EmbeddedGraphLoader
+from cymod.customise import CustomLabels
 
 def touch(path):
     """Immitate *nix `touch` behaviour, creating directories as required."""
@@ -188,6 +189,30 @@ class GraphLoaderTestCase(unittest.TestCase):
         self.assertEqual(query_iter.next().statement, query2.statement)
         self.assertRaises(StopIteration, query_iter.next)  
 
+    def test_custom_labels_applied_for_tabular(self):
+        """Custom labels should be applied via load_tabular."""
+        gl = GraphLoader()
+        gl.load_tabular(self.demo_explicit_table, "start", "end",
+            labels=CustomLabels({"State": "MyState"}))
+
+        query_iter = gl.iterqueries()
+
+        query1 = CypherQuery('MERGE (start:MyState {code:"state1"}) '
+            + 'MERGE (end:MyState {code:"state2"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low"})-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery('MERGE (start:MyState {code:"state2"}) '
+            + 'MERGE (end:MyState {code:"state3"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
+        )
+        
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)  
+
 
 class EmbeddedGraphLoaderTestCase(unittest.TestCase):
 
@@ -206,7 +231,6 @@ class EmbeddedGraphLoaderTestCase(unittest.TestCase):
 
         egl = EmbeddedGraphLoader()
         egl.load_cypher(self.test_dir, global_params={"paramval": 3})
-        # {test_param: $paramval}
 
         query_strings = egl.query_generator()
         self.assertEqual(query_strings.next(), 

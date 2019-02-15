@@ -10,6 +10,7 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery
 from cymod.tabproc import TransTableProcessor
+from cymod.customise import CustomLabels
 
 class TransTableProcessorTestCase(unittest.TestCase):
     def setUp(self):
@@ -108,6 +109,29 @@ class TransTableProcessorTestCase(unittest.TestCase):
         self.assertEqual(query_iter.next().statement, query2.statement)
         self.assertRaises(StopIteration, query_iter.next)   
 
+
+    def test_custom_labels_can_be_applied(self):
+        """If custom labels specified, should apply to relevant nodes."""
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+            labels=CustomLabels({"State": "MyState"}))
+
+        query_iter = ttp.iterqueries()
+
+        query1 = CypherQuery('MERGE (start:MyState {code:"state1"}) '
+            + 'MERGE (end:MyState {code:"state2"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low"})-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery('MERGE (start:MyState {code:"state2"}) '
+            + 'MERGE (end:MyState {code:"state3"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
+        )
+        
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)   
         
 
 

@@ -54,7 +54,7 @@ class GraphLoader(object):
         else:
             self._load_job_queue.append(cff)
 
-    def load_tabular(self, df, start_state_col, end_state_col, 
+    def load_tabular(self, df, start_state_col, end_state_col, labels=None,
         global_params=None):
         """Generate Cypher queries based data in a :obj:`pandas.DataFrame`.
         
@@ -69,7 +69,7 @@ class GraphLoader(object):
                 will be added as parameters to every query.            
         """
         tabular_src = TransTableProcessor(df, start_state_col, end_state_col, 
-            global_params=global_params)
+            labels=labels, global_params=global_params)
         self._load_job_queue.append(tabular_src)
 
     def iterqueries(self):

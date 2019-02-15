@@ -18,7 +18,7 @@ class CustomLabels(object):
     model, we wish to make these customisable. This class facilitates that
     customisation.
     """
-    def __init__(self, label_map):
+    def __init__(self, label_map=None):
         """
         Args:
             label_map (dict of str to str): A dictionary with keys consisting 
@@ -35,15 +35,18 @@ class CustomLabels(object):
     @label_map.setter
     def label_map(self, value):
         bad_labels = []
-        for k in value.keys():
-            if k not in ["State", "Transition", "Condition"]:
-                bad_labels.append(k)
-        if bad_labels:
-            raise ValueError("The only customisable labels are 'State', "
-            + "'Transition' and 'Condition'. The following are not  allowed: " 
-            + str(bad_labels))
-        else:
-            self._label_map = value
+        try:
+            for k in value.keys():
+                if k not in ["State", "Transition", "Condition"]:
+                    bad_labels.append(k)
+            if bad_labels:
+                raise ValueError("The only customisable labels are 'State', "
+                + "'Transition' and 'Condition'. The following are not  "
+                + "allowed: " + str(bad_labels))
+            else:
+                self._label_map = value
+        except AttributeError:
+            self._label_map = {}
 
     @property
     def state(self):
