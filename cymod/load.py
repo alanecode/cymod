@@ -12,6 +12,7 @@ from __future__ import print_function
 import sys
 import os
 import json
+import re
 
 from six import iteritems, iterkeys
 
@@ -221,39 +222,39 @@ class EmbeddedGraphLoader(GraphLoader):
     will allow cymod to be used within Java applicatons to provide data to an
     embedded Neo4j instance.
 
-    Using cymod within Java applications is a big help when using Neo4j and
-    Cypher in situations in which a Java application will have access to a JRE
-    but no Neo4j server will be available.
-
+    Using cymod within Java applications is useful when using Neo4j and Cypher 
+    in situations in which a Java application will have access to a JRE but no 
+    Neo4j server will be available.
     """
-    def __init__(self, root_dir, fname_suffix, global_param_file=None):
-        super(EmbeddedGraphLoader, self).__init__(root_dir,
-                                                  fname_suffix,
-                                                  global_param_file)
+    def __init__(self):
+        super(EmbeddedGraphLoader, self).__init__()
 
-    def _get_cypher_file_queries(self, cypher_file):
-        """Return concrete (no params) queries for CypherFile"""
-        params = self._get_joint_params(cypher_file)
-        queries = [self._parse_query_params(q, params)
-                   for q
-                   in cypher_file.queries]
-        return queries
+        self.param_re = re.compile(r"(\$)([a-zA-Z1-9_]*)")
+
+    def _query_to_concrete_str(self, cypher_query):
+        """Convert a parameterised :obj:`CypherQuery` to a concrete string.
+        
+        Args:
+            cypher_query (:obj:`CypherQuery`)
+            
+        Returns:
+            str: Cypher query with parameter placeholders replaced with 
+                concrete values.
+        """
+        param_matches = self.param_re.findall(cypher_query.statement)
+        working_string = cypher_query.statement
+        for match in param_matches:
+            param_string = "".join(match)
+            working_string = working_string.replace(param_string, 
+                str(cypher_query.params[match[1]]))
+        return working_string
 
     def query_generator(self):
-        """Go through each query in each file in turn, yielding queries."""
-        files = list(self.cypher_files)
-        num_files = len(files)
-        nf = 0
-        nq = 0
-        while nf < num_files:
-            # lis of concrete (no params) queries for each CypherFile in
-            # loop
-            queries = self._get_cypher_file_queries(files[nf])
-            no_queries = len(queries)
-            print('Processing {0} queries in file {1}'
-                  .format(no_queries, files[nf].filename))
-            while nq < len(queries):
-                yield queries[nq]
-                nq += 1
-            nf += 1
-            nq = 0
+        """Generate concrete strings representing each loaded query.
+        
+        Yields:
+            str: Queries with parameter placeholders replaced with concrete 
+                values.
+        """
+        for q in self.iterqueries():
+            yield self._query_to_concrete_str(q)

@@ -10,7 +10,7 @@ from os import path
 import unittest
 import warnings
 
-from cymod.load import GraphLoader
+from cymod.load import GraphLoader, EmbeddedGraphLoader
 
 def touch(path):
     """Immitate *nix `touch` behaviour, creating directories as required."""
@@ -150,3 +150,29 @@ class GraphLoaderTestCase(unittest.TestCase):
 
         with self.assertRaises(StopIteration):
             queries.next()
+
+class EmbeddedGraphLoaderTestCase(unittest.TestCase):
+
+    def setUp(self):
+        # Create a temporary directory
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        # Remove the temp directory after the test
+        shutil.rmtree(self.test_dir)
+
+    def test_parameters_replaced_with_strings(self):
+        """Parameters should be replaced with concrete strings."""
+        fname = path.join(self.test_dir, "file1.cql")
+        write_query_set_3_to_file(fname)
+
+        egl = EmbeddedGraphLoader()
+        egl.load_cypher(self.test_dir, global_params={"paramval": 3})
+        # {test_param: $paramval}
+
+        query_strings = egl.query_generator()
+        self.assertEqual(query_strings.next(), 
+            'MERGE (n:TestNode {test_param: 3});')
+
+        with self.assertRaises(StopIteration):
+            query_strings.next()
