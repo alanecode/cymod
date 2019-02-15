@@ -15,6 +15,7 @@ import pandas as pd
 
 from cymod.params import validate_cypher_params
 from cymod.cybase import CypherQuery, CypherQuerySource
+from cymod.customise import CustomLabels
 
 class TransTableProcessor(object):
     """Processes a :obj:`pandas.DataFrame` and produces Cypher queries.
@@ -52,8 +53,12 @@ class TransTableProcessor(object):
         self.df = df
         self.start_state_col = start_state_col
         self.end_state_col = end_state_col
-        self.labels = labels
         self.global_params = global_params
+
+        if labels:
+            self.labels = labels
+        else:
+            self.labels = CustomLabels()
 
         self.node_re = re.compile(r"\((start:|end:|trans:|cond:)[^(]*\)")
         self.props_re = re.compile(r"\{.*\}")
@@ -117,14 +122,16 @@ class TransTableProcessor(object):
     def _row_to_query_statement_string(self, row):
         """Build the string specifying the cypher query for a single row."""
         start_node = 'MERGE (start:{state_lab} {{code:"{start_state}"}})'\
-            .format(state_lab="State", start_state=row[self.start_state_col])
+            .format(state_lab=self.labels.state, 
+                start_state=row[self.start_state_col])
 
         end_node = 'MERGE (end:{state_lab} {{code:"{end_state}"}})'\
-            .format(state_lab="State", end_state=row[self.end_state_col])
+            .format(state_lab=self.labels.state, 
+                end_state=row[self.end_state_col])
 
         transition \
             = 'MERGE (start)<-[:SOURCE]-(trans:{trans_lab})-[:TARGET]->(end)'\
-                . format(trans_lab="Transition")
+                . format(trans_lab=self.labels.transition)
 
         def _conditions_str(row, start_state_col, end_state_col):
             """Build the string used to express transition conditions.
@@ -150,7 +157,7 @@ class TransTableProcessor(object):
             return "{" + s + "}"
 
         condition = 'MERGE (cond:{cond_lab} {cond_str})-[:CAUSES]->(trans)'\
-                .format(cond_lab="Condition", 
+                .format(cond_lab=self.labels.condition, 
                     cond_str=_conditions_str(row, self.start_state_col, 
                         self.end_state_col))
 
