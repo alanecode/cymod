@@ -70,54 +70,88 @@ class GraphLoader(object):
         self._load_job_queue.append(tabular_src)
 
     def iterqueries(self):
-        """Provide an iterable over Cypher queries from loaded sources.
-
-        TODO Refactor by delegating the processing of glibal parameters to 
-            class methods.
-
-        TODO Use a switch case to handle different instance cases to improve
-            readability
+        """Provide an iterable over Cypher queries from all loaded sources.
 
         Yields:
-            :obj:`CypherQuery`: Appropriately ordered Cypher queries.        
-        
+            :obj:`CypherQuery`: Cypher queries in an order which respects the
+                order in which they were loaded into the :obj:`GraphLoader` 
+                instance.        
         """
-        for load_job in self._load_job_queue:
-            if isinstance(load_job, CypherFileFinder):
-                for cypher_file in load_job.iterfiles(priority_sorted=True):
-                    for query in cypher_file.queries:
-                        yield query
-
-            elif isinstance(load_job, dict):
-                # Case where load_job is a CypherFileFinder with global params
-                cff = load_job["file_finder"]
-                global_params = load_job["global_params"]
-                for cypher_file in cff.iterfiles(priority_sorted=True):
-                    for query in cypher_file.queries:
-                        # Get list of parameters in query with None value and 
-                        # attempt to replace None with value from global_params
-                        unspecified_native_params = [k for k 
-                            in query.params.keys() 
-                            if not query.params[k]]
-                        for unspecified_param in unspecified_native_params:
-                            try:
-                                query.params[unspecified_param] \
-                                    = global_params[unspecified_param]
-                            except KeyError:
-                                # Raise an exception if a query has a required 
-                                # None parameter at this stage
-                                raise KeyError("The following query requires "\
-                                    + "a parameter not given in its "\
-                                    + "originating Cypher file, nor in the "\
-                                    + "provided global parameters:\n"\
-                                    + str(query))
-                        yield query
-
-            else:
-                # assumed load_job is a tabular data source
-                for query in load_job.iterqueries():
+        def handle_cypher_files_no_global_params(file_finder):
+            """Yield queries from :obj:`CypherFileFinder` without extra params.
+            
+            Args:
+                file_finder (:obj:`CypherFileFinder`)
+                
+            Yields:
+                :obj:`CypherQuery`
+            """
+            for cypher_file in file_finder.iterfiles(priority_sorted=True):
+                for query in cypher_file.queries:
                     yield query
 
+        def handle_cypher_files_wi_global_params(file_finder_dict):
+            """Yield queries from :obj:`CypherFileFinder` with extra params.
+            
+            Extra parameters are passed along with the file finder inside a
+            dict.
+            
+            Args:
+                file_finder_dict (dict): Dictionary with two key/value pairs;
+                    file_finder_dict["file_finder"] is a 
+                    :obj:`CypherFileFinder` and 
+                    file_finder_dict["global_params"] is a dict whose key/value
+                    pairs are extra parameters to be added to the queries 
+                    identified by the file finder, as appropriate.
+            
+            Yields:
+                :obj:`CypherQuery`
+            """
+            cff = file_finder_dict["file_finder"]
+            global_params = file_finder_dict["global_params"]
+            for cypher_file in cff.iterfiles(priority_sorted=True):
+                for query in cypher_file.queries:
+                    # Get list of parameters in query with None value and 
+                    # attempt to replace None with value from global_params
+                    unspecified_native_params = [k for k in query.params.keys() 
+                        if not query.params[k]]
+                    for unspecified_param in unspecified_native_params:
+                        try:
+                            query.params[unspecified_param] \
+                                = global_params[unspecified_param]
+                        except KeyError:
+                            # Raise an exception if a query has a required 
+                            # None parameter at this stage
+                            raise KeyError("The following query requires  a " 
+                                + "parameter not given in its originating "
+                                + "Cypher file, nor in the provided global "
+                                + "parameters:\n" + str(query))
+                    yield query
+
+        def handle_tabular_data_source(tabular_source):
+            """Yield queries from a tabular data source.
+            
+            Args:
+                tabular_source (:obj:`TransTableProcessor`)
+                
+            Yields:
+                :obj:`CypherQuery`
+            """
+            for query in tabular_source.iterqueries():
+                yield query
+
+        handler = {
+            CypherFileFinder: handle_cypher_files_no_global_params,
+            dict: handle_cypher_files_wi_global_params,
+            TransTableProcessor: handle_tabular_data_source
+        }
+
+        for load_job in self._load_job_queue:
+            for t in handler.keys():
+                if isinstance(load_job, t):
+                    for query in handler[t](load_job):
+                        yield query
+                    break
 
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
