@@ -3,20 +3,8 @@
 cymod.load
 ~~~~~~~~~~
 
-Loads Cypher files and uses them to construct and execute a database
-transaction.
-
-Checks the database for the existence of nodes with the same global Parameters
-and carries out some user defined behaviour, e.g. append or remove and replace
-
-Previously all code needed to do the following was in the GraphLoader
-class:
-1. load cypher and parameters from files,
-2. load connect to a Neo4j server instance, and
-3. insert cypher data into that database
-
-Now 1 is handled by the GraphLoader class. 2 and 3 are achieved by
-ServerGraphLoader.
+Loads Cypher files and/or tabular state transition data and uses this data to
+construct and execute database transactions.
 
 """
 from __future__ import print_function
@@ -169,8 +157,7 @@ class ServerGraphLoader(GraphLoader):
             :obj:`GraphDatabase.driver`
         """
         try:
-            driver = GraphDatabase.driver(uri,
-                                          auth=(username, password))
+            driver = GraphDatabase.driver(uri, auth=(username, password))
             return driver
         except Exception as e:
             print('Could not load graph. Check password.', file=sys.stderr)
