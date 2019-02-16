@@ -14,7 +14,7 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery
 from cymod.load import GraphLoader, EmbeddedGraphLoader
-from cymod.customise import CustomLabels
+from cymod.customise import NodeLabels
 
 def touch(path):
     """Immitate *nix `touch` behaviour, creating directories as required."""
@@ -193,7 +193,7 @@ class GraphLoaderTestCase(unittest.TestCase):
         """Custom labels should be applied via load_tabular."""
         gl = GraphLoader()
         gl.load_tabular(self.demo_explicit_table, "start", "end",
-            labels=CustomLabels({"State": "MyState"}))
+            labels=NodeLabels({"State": "MyState"}))
 
         query_iter = gl.iterqueries()
 

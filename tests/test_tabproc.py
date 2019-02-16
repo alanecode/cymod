@@ -10,7 +10,7 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery
 from cymod.tabproc import TransTableProcessor
-from cymod.customise import CustomLabels
+from cymod.customise import NodeLabels
 
 class TransTableProcessorTestCase(unittest.TestCase):
     def setUp(self):
@@ -113,7 +113,7 @@ class TransTableProcessorTestCase(unittest.TestCase):
     def test_custom_labels_can_be_applied(self):
         """If custom labels specified, should apply to relevant nodes."""
         ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
-            labels=CustomLabels({"State": "MyState"}))
+            labels=NodeLabels({"State": "MyState"}))
 
         query_iter = ttp.iterqueries()
 

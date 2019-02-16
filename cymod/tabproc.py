@@ -15,7 +15,7 @@ import pandas as pd
 
 from cymod.params import validate_cypher_params
 from cymod.cybase import CypherQuery, CypherQuerySource
-from cymod.customise import CustomLabels
+from cymod.customise import NodeLabels
 
 class TransTableProcessor(object):
     """Processes a :obj:`pandas.DataFrame` and produces Cypher queries.
@@ -58,7 +58,7 @@ class TransTableProcessor(object):
         if labels:
             self.labels = labels
         else:
-            self.labels = CustomLabels()
+            self.labels = NodeLabels()
 
         self.node_re = re.compile(r"\((start:|end:|trans:|cond:)[^(]*\)")
         self.props_re = re.compile(r"\{.*\}")

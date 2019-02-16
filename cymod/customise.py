@@ -6,7 +6,7 @@ This module contains classes used to customise features of cymod to tailor it
 to particular subject domains.
 """
 
-class CustomLabels(object):
+class NodeLabels(object):
     """Contains data necessary to cusomise transition table node labels.
     
     By default, if a transition table is used to load model data into a 

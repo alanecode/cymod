@@ -186,7 +186,7 @@ This can be achieved by modifying the code used for [[#UC4-trans-table][UC4]] as
 ***** API usage
 #+BEGIN_SRC python
 import pandas as pd
-from cymod import ServerGraphLoader, CustomLabels
+from cymod import ServerGraphLoader, NodeLabels
 
 # Initialise ServerGraphLoader object
 gl = ServerGraphLoader(user="username", password="password")
@@ -195,9 +195,9 @@ gl = ServerGraphLoader(user="username", password="password")
 trans_df = pd.read_csv("model.csv")
 
 # Specify custom node labels
-labels = CustomLabels({"State": "LandCoverState", 
-                       "Transition": "LandCoverTransition",
-                       "Condition" : "EnvironCondition"})
+labels = NodeLabels({"State": "LandCoverState", 
+                     "Transition": "LandCoverTransition",
+                     "Condition" : "EnvironCondition"})
 
 # Load the tabular data into the ServerGraphLoader object
 gl.load_tabular(trans_df, start_state_col="start", end_state_col="end",
