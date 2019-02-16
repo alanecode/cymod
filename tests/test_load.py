@@ -10,7 +10,11 @@ from os import path
 import unittest
 import warnings
 
+import pandas as pd
+
+from cymod.cybase import CypherQuery
 from cymod.load import GraphLoader, EmbeddedGraphLoader
+from cymod.customise import NodeLabels
 
 def touch(path):
     """Immitate *nix `touch` behaviour, creating directories as required."""
@@ -44,6 +48,12 @@ class GraphLoaderTestCase(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory
         self.test_dir = tempfile.mkdtemp()
+
+        self.demo_explicit_table = pd.DataFrame({
+            "start": ["state1", "state2"], 
+            "end": ["state2", "state3"], 
+            "cond": ["low", "high"]
+        })
 
     def tearDown(self):
         # Remove the temp directory after the test
@@ -114,8 +124,6 @@ class GraphLoaderTestCase(unittest.TestCase):
 
         self.assertEqual(this_query.params, {"paramval": 5})
 
-
-
     def test_multiple_calls_to_graph_loader(self):
         """Check load_cypher can be called multiple times.
 
@@ -151,6 +159,61 @@ class GraphLoaderTestCase(unittest.TestCase):
         with self.assertRaises(StopIteration):
             queries.next()
 
+    def test_global_params_specified_for_tabular(self):
+        """Global params specified in load_tabular should appear in queries."""
+        gl = GraphLoader()
+        gl.load_tabular(self.demo_explicit_table, "start", "end",
+            global_params={"id": "test-id", "version": 2})
+
+        query_iter = gl.iterqueries()
+
+        query1 = CypherQuery(
+            'MERGE (start:State {code:"state1", id:"test-id", version:2}) '
+            + 'MERGE (end:State {code:"state2", id:"test-id", version:2}) '
+            + 'MERGE (start)<-[:SOURCE]-'
+            + '(trans:Transition {id:"test-id", version:2})-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low", id:"test-id", version:2})'
+            + '-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery(
+            'MERGE (start:State {code:"state2", id:"test-id", version:2}) '
+            + 'MERGE (end:State {code:"state3", id:"test-id", version:2}) '
+            + 'MERGE (start)<-[:SOURCE]-'
+            + '(trans:Transition {id:"test-id", version:2})-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high", id:"test-id", version:2})'
+            + '-[:CAUSES]->(trans);'
+        )
+
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)  
+
+    def test_custom_labels_applied_for_tabular(self):
+        """Custom labels should be applied via load_tabular."""
+        gl = GraphLoader()
+        gl.load_tabular(self.demo_explicit_table, "start", "end",
+            labels=NodeLabels({"State": "MyState"}))
+
+        query_iter = gl.iterqueries()
+
+        query1 = CypherQuery('MERGE (start:MyState {code:"state1"}) '
+            + 'MERGE (end:MyState {code:"state2"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low"})-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery('MERGE (start:MyState {code:"state2"}) '
+            + 'MERGE (end:MyState {code:"state3"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
+        )
+        
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)  
+
+
 class EmbeddedGraphLoaderTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -168,7 +231,6 @@ class EmbeddedGraphLoaderTestCase(unittest.TestCase):
 
         egl = EmbeddedGraphLoader()
         egl.load_cypher(self.test_dir, global_params={"paramval": 3})
-        # {test_param: $paramval}
 
         query_strings = egl.query_generator()
         self.assertEqual(query_strings.next(), 

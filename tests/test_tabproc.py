@@ -10,6 +10,7 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery
 from cymod.tabproc import TransTableProcessor
+from cymod.customise import NodeLabels
 
 class TransTableProcessorTestCase(unittest.TestCase):
     def setUp(self):
@@ -32,8 +33,7 @@ class TransTableProcessorTestCase(unittest.TestCase):
 
     def test_explicit_codes_queries_correct(self):
         """TransTableProcessorTestCase.iterqueries() yields correct queries."""
-        ttp = TransTableProcessor(self.demo_explicit_table,
-            "start", "end")
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end")
         query_iter = ttp.iterqueries()
 
         query1 = CypherQuery('MERGE (start:State {code:"state1"}) '
@@ -76,13 +76,63 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + '-[:CAUSES]->(trans);'
         )
 
-        #this_query = query_iter.next()
         self.assertEqual(query_iter.next().statement, query1.statement)
-
-        #this_query = query_iter.next()
         self.assertEqual(query_iter.next().statement, query2.statement)
-        
         self.assertRaises(StopIteration, query_iter.next)
+
+    def test_global_params_included_in_node_properties(self):
+        """If global parameters specified, should apply to every node."""
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+            global_params={"id": "test-id", "version": 2})
+
+        query_iter = ttp.iterqueries()
+
+        query1 = CypherQuery(
+            'MERGE (start:State {code:"state1", id:"test-id", version:2}) '
+            + 'MERGE (end:State {code:"state2", id:"test-id", version:2}) '
+            + 'MERGE (start)<-[:SOURCE]-'
+            + '(trans:Transition {id:"test-id", version:2})-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low", id:"test-id", version:2})'
+            + '-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery(
+            'MERGE (start:State {code:"state2", id:"test-id", version:2}) '
+            + 'MERGE (end:State {code:"state3", id:"test-id", version:2}) '
+            + 'MERGE (start)<-[:SOURCE]-'
+            + '(trans:Transition {id:"test-id", version:2})-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high", id:"test-id", version:2})'
+            + '-[:CAUSES]->(trans);'
+        )
+
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)   
+
+
+    def test_custom_labels_can_be_applied(self):
+        """If custom labels specified, should apply to relevant nodes."""
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+            labels=NodeLabels({"State": "MyState"}))
+
+        query_iter = ttp.iterqueries()
+
+        query1 = CypherQuery('MERGE (start:MyState {code:"state1"}) '
+            + 'MERGE (end:MyState {code:"state2"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"low"})-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery('MERGE (start:MyState {code:"state2"}) '
+            + 'MERGE (end:MyState {code:"state3"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
+        )
+        
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)   
+        
 
 
 
