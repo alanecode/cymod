@@ -16,15 +16,15 @@ knowledge renders them difficult to represent in their entirety on a
 
 Cymod aims to simplify the development and use of detailed STMs by allowing
 modellers to specify components of their models piecemeal in individual Cypher
-files. Cymod can then to do the work of wiring these components together into
-an complete model, stored in a Neo4j_ graph database.
+files. Cymod can then to do the work of wiring these components together into a
+complete model, stored in a Neo4j_ graph database.
 
 Example usage
 -------------
 
-Having prepared a set of Cypher files specifying an STM in the `./cypher-files` 
-directory, a modeller can load those files into the database with the following 
-Python commands:
+Having prepared a set of Cypher files specifying an STM in the
+``./cypher-files`` directory, a modeller can load those files into the graph
+database with the following Python commands:
 
 .. code-block:: python
 
