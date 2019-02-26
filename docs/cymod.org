@@ -46,7 +46,7 @@ cymod: ~.cypher~, ~.cql~, and ~.cyp~. All of these should be loaded into Neo4j s
 #+BEGIN_SRC python
 from cymod import ServerGraphLoader
 
-# initialise a ServerGraphLoader object
+# initialise a ServerGraphLoader object using your Neo4j credentials
 gl = ServerGraphLoader(user="username", password="password")
 
 # read cypher queries from files in cypher-files directory
@@ -375,7 +375,6 @@ This might manifest itself by either:
 
 * Modelling
 ** Scenario 1
-
 
 
 

@@ -1,50 +1,45 @@
 ============================================================
-cymod
+Cymod
 ============================================================
 
-Tool to read in files containing cypher queries
-
-
-
-Parameters
-(compulsory):
--p: password (should not be printed to screen, use getpass https://docs.python.org/2/library/getpass.html)
-
-(optional):
-- h: host (defaults to localhost)
-- d: root directory to search for files (defaults to current directory)
--params: name of cypher parameters (json) file, defaults to none, throwing error if queries require parameters.
-
+A tool to support the description and development of state-and-transition 
+models using the Cypher_ graph query language.
 
 Purpose
-____________________________________________________________
+-------
 
-Whereas py2neo is useful as an abstraction away from needing to write cypher
-when interacting with a database in Python, what cymod aims to do is /support/
-the use of cypher as a language which is useful for the description of
-complicated models.
+State-and-transition models (STMs_) are valuable tools for capturing and 
+communicating qualitative ecological and geomorphic knowledge. However, 
+they can become unwieldy when the richness of the available qualitative 
+knowledge renders them difficult to represent in their entirety on a 
+2-dimensional surface.
 
-TODO
-____________________________________________________________
+Cymod aims to simplify the development and use of detailed STMs by allowing
+modellers to specify components of their models piecemeal in individual Cypher
+files. Cymod can then to do the work of wiring these components together into
+an complete model, stored in a Neo4j_ graph database.
 
+Example usage
+-------------
 
-Python 2.7 conversion
-------------------------------------------------------------
+Having prepared a set of Cypher files specifying an STM in the `./cypher-files` 
+directory, a modeller can load those files into the database with the following 
+Python commands:
 
-- To enable the use of cymod within Java applications (such as Repast models)
-  it is necessarry for them to be able to run in Jython -- the implementation
-  of Python which runs in the JVM. As of June 2018, Jython only supports Python
-  2.7. Therefore it is necessary to make the cymod codebase work with Python
-  2.7.
-  
-Repurpose code for convenient generation of cypher in Java 
-------------------------------------------------------------
+.. code-block:: python
 
-I want to be able to generate cypher from files within a Java application. This
-will require some refactoring.
+   from cymod import ServerGraphLoader
 
-Move _get_graph and refresh_graph into a ServerGraphLoader object which
-inherits from GraphLoader
+   # Initialise a ServerGraphLoader object using your Neo4j credentials
+   gl = ServerGraphLoader(user="username", password="password")
 
-GraphLoader will no longer need hostname, username, password or refresh_graph
-parameters.
+   # Read cypher queries from files in cypher-files directory
+   gl.load_cypher("cypher-files")
+
+   # Run these queries against the graph specified in the neo4j
+   # configuration file
+   gl.commit()
+
+.. _Cypher: https://neo4j.com/developer/cypher/
+.. _Neo4j: https://neo4j.com/
+.. _STMs: http://doi.org/10.1007/978-3-319-46709-2_9
