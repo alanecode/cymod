@@ -15,6 +15,7 @@ import pandas as pd
 from cymod.cybase import CypherQuery
 from cymod.load import GraphLoader, EmbeddedGraphLoader
 from cymod.customise import NodeLabels
+from cymod.tabproc import EnvrStateAliasTranslator
 
 def touch(path):
     """Immitate *nix `touch` behaviour, creating directories as required."""
@@ -54,6 +55,14 @@ class GraphLoaderTestCase(unittest.TestCase):
             "end": ["state2", "state3"], 
             "cond": ["low", "high"]
         })
+
+        self.demo_coded_table = pd.DataFrame({
+                "start": [0, 1], 
+                "end": [1, 2], 
+                "cond1": [0, 1],
+                "cond2": [2, 3],
+                "cond3": [1, 0]
+        })  
 
     def tearDown(self):
         # Remove the temp directory after the test
@@ -212,6 +221,16 @@ class GraphLoaderTestCase(unittest.TestCase):
         self.assertEqual(query_iter.next().statement, query1.statement)
         self.assertEqual(query_iter.next().statement, query2.statement)
         self.assertRaises(StopIteration, query_iter.next)  
+
+    def test_coded_transition_table_can_be_used(self):
+        trans =  EnvrStateAliasTranslator()
+
+        gl = GraphLoader()
+        try:
+            gl.load_tabular(self.demo_coded_table, "start", "end", 
+                state_alias_translator=trans)
+        except Exception:
+            self.fail("Could not use state_alias_translator in load_tabular.")
 
 
 class EmbeddedGraphLoaderTestCase(unittest.TestCase):

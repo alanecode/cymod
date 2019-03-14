@@ -18,7 +18,7 @@ URL = 'https://github.com/alanecode/cymod'
 EMAIL = 'ajlane50@gmail.com'
 AUTHOR = 'Andrew Lane'
 REQUIRES_PYTHON = '==2.7'
-VERSION = '0.0.4'
+VERSION = '0.0.5'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

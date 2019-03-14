@@ -9,6 +9,7 @@ data source.
 import re
 import json
 import collections
+import warnings
 
 import six
 import pandas as pd
@@ -16,6 +17,59 @@ import pandas as pd
 from cymod.params import validate_cypher_params
 from cymod.cybase import CypherQuery, CypherQuerySource
 from cymod.customise import NodeLabels
+
+class EnvrStateAliasTranslator(object):
+    """Container for translations from codes to human readable values.
+
+    Sometimes it is useful to specify a transition table using codes rather
+    than human readable aliases. This class contains data which is used by a 
+    :obj:`TransTableProcessor` to perform this translation.
+
+    Attrs:
+        state_aliases (dict): Mapping from codes identifying states to names.
+        cond_aliases (:obj:`collections.OrderedDict`): Mappings from conditions
+            and their codes to corresponding values.
+    """
+
+    def __init__(self):
+        self.state_aliases = {}
+        self.cond_aliases = collections.OrderedDict()
+
+    def add_cond_aliases(self, cond_name, trans_dict):
+        """Add code-to-name translation for a state condition.
+        
+        Args:
+            cond_name (str): Name for the environmental condition.
+            trans_dict (dict): Dictionary containing mappings from codes to 
+                values for this envrionmental condition.
+        """
+        self.cond_aliases[cond_name] = trans_dict
+
+    @property
+    def all_conds(self):
+        return list(self.cond_aliases.keys())
+
+    def state_alias(self, state_code):
+        """Return the name of the state with the given code."""
+        try:
+            return self.state_aliases[state_code]
+        except KeyError:
+            raise ValueError("No alias specified for state with code '{0}'."\
+                .format(state_code))
+
+    def cond_alias(self, cond_name, cond_code):
+        """Return the name of the state condition value with the given code."""
+        try:
+            self.cond_aliases[cond_name]
+        except KeyError:
+            raise ValueError("No aliases specified for condition '{0}'."\
+                .format(cond_name))
+
+        try:
+            return self.cond_aliases[cond_name][cond_code]
+        except KeyError:
+            raise ValueError(("No alias specified for condition '{0}' with "
+                + "value '{1}'.").format(cond_name, cond_code))
 
 class TransTableProcessor(object):
     """Processes a :obj:`pandas.DataFrame` and produces Cypher queries.
@@ -32,7 +86,7 @@ class TransTableProcessor(object):
     """
 
     def __init__(self, df, start_state_col, end_state_col, labels=None,
-            global_params=None):
+            global_params=None, state_alias_translator=None):
         """
         Args:
             df (:obj:`pandas.DataFrame`): Table containing data which will be 
@@ -49,11 +103,17 @@ class TransTableProcessor(object):
                 Condition nodes are labelled in the generated graph.
             global_params (dict, optional): property name/ value pairs which 
                 will be added as parameters to every query.
+            state_alias_translator (:obj:`EnvrStateAliasTranslator`): Container 
+                for translations from codes to human readable values.
         """
-        self.df = df
         self.start_state_col = start_state_col
         self.end_state_col = end_state_col
         self.global_params = global_params
+
+        if state_alias_translator:
+            self.df = self._aliased_df_from_codes(df, state_alias_translator)
+        else:
+            self.df = df
 
         if labels:
             self.labels = labels
@@ -85,6 +145,37 @@ class TransTableProcessor(object):
         # Remove space after key:value colon
         string = re.sub(r"(:)( )([\d\"\'])", r"\1\3", string)
         return string[1:-1]
+
+    def _aliased_df_from_codes(self, df, translator):
+        """Convert codes to aliases in the transition table.
+
+        Args:
+            df (:obj:`pd.DataFrame`): Transition table data.
+            translator (:obj:`EnvrStateAliasTranslator`): Used to convert codes 
+                in the transition table to human readable aliases.
+
+        Returns:
+            :obj:`pd.DataFrame`: A version of the transition table with state 
+                and condition codes replaced with corresponding names.
+        """
+        aliased_df = df.copy()
+
+        # Replace state codes with their names
+        if translator.state_aliases:
+            for state_col in [self.start_state_col, self.end_state_col]:
+                aliased_df[state_col] = aliased_df[state_col]\
+                    .apply(translator.state_alias)
+        
+        # Replace condition codes with their names
+        for cond_col in translator.all_conds:            
+            if cond_col not in aliased_df.columns:
+                warnings.warn(("'{0}' given in translator but not"
+                    + " found in transition table.").format(cond_col))
+            else:
+                aliased_df[cond_col] = aliased_df[cond_col]\
+                    .apply(lambda x: translator.cond_alias(cond_col, x))
+                
+        return aliased_df
 
     def _add_global_params_to_query_string(self, query_str, global_params):
         """Modify a query string specifying node creation, add parameters.
@@ -178,18 +269,3 @@ class TransTableProcessor(object):
     def iterqueries(self):
         for i, row in self.df.iterrows():
             yield self._row_to_cypher_query(i, row)
-
-
-    
-
-        
-
-        
-
-
-
-    
-
-    
-
-    
