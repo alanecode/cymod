@@ -17,7 +17,7 @@ DESCRIPTION = 'Process files containing Cypher queries describing complicated mo
 URL = 'https://github.com/alanecode/cymod'
 EMAIL = 'ajlane50@gmail.com'
 AUTHOR = 'Andrew Lane'
-REQUIRES_PYTHON = '==2.7'
+REQUIRES_PYTHON = '>=2.7, <3'
 VERSION = '0.0.5'
 
 # What packages are required for this module to be executed?
