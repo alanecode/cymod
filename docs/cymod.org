@@ -243,6 +243,9 @@ gl.commit()
 
 
 **** UC7: Load model specified by a coded succession transition table into Neo4j server
+:PROPERTIES:
+:CUSTOM_ID: cymod-UC7
+:END:
 ***** Use case description
 Jenny has the same table to load into Neo4j server as Dave (of [[#UC4-trans-table][UC4]] fame) did
 but, being of a quantitative bent, Jenny has encoded the data using numerical
@@ -262,6 +265,9 @@ These codes have the following meanings:
 The ~trans_time~ column contains numerical data as was the case in UC4.
 
 ***** API usage
+:PROPERTIES:
+:CUSTOM_ID: cymod-UC7-API
+:END:
 #+BEGIN_SRC python
 import pandas as pd
 from cymod import ServerGraphLoader, EnvrStateAliasTranslator
@@ -269,8 +275,8 @@ from cymod import ServerGraphLoader, EnvrStateAliasTranslator
 # Set up EnvrStateAliasTranslator and configure with relevant model-specific data
 trans = EnvrStateAliasTranslator()
 trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
-trans.add_condition_aliases("cond1", {0: False, 1: True})
-trans.add_condition_aliases("cond2", {0: "low", 1: "high"})
+trans.add_cond_aliases("cond1", {0: False, 1: True})
+trans.add_cond_aliases("cond2", {0: "low", 1: "high"})
 
 # Initialise ServerGraphLoader object
 gl = ServerGraphLoader(user="username", password="password")
