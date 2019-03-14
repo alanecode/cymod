@@ -153,7 +153,7 @@ class TransTableProcessorTestCase(unittest.TestCase):
         trans.add_cond_aliases("cond1", {0: "low", 1: "high"})
         trans.add_cond_aliases("cond3", {0: False, 1: True})
 
-        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+        ttp = TransTableProcessor(self.demo_coded_table, "start", "end",
             state_alias_translator=trans)
         query_iter = ttp.iterqueries()
 
