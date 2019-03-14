@@ -149,7 +149,7 @@ class TransTableProcessorTestCase(unittest.TestCase):
 
     def test_coded_queries_correct(self):
         trans =  EnvrStateAliasTranslator()
-        trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
+        trans.state_aliases = {0: "state1", 1: "state2", 2: "state3"}
         trans.add_cond_aliases("cond1", {0: "low", 1: "high"})
         trans.add_cond_aliases("cond3", {0: False, 1: True})
 
@@ -187,16 +187,18 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
     """
     def test_can_add_state_aliases(self):
         trans =  EnvrStateAliasTranslator()
-        trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
-        self.assertEqual(trans.get_state_alias(0), "state1")
-        self.assertEqual(trans.get_state_alias(1), "state2")
-        self.assertEqual(trans.get_state_alias(2), "state3")
+        trans.state_aliases = {0: "state1", 1: "state2", 2: "state3"}
+        self.assertEqual(trans.state_alias(0), "state1")
+        self.assertEqual(trans.state_alias(1), "state2")
+        self.assertEqual(trans.state_alias(2), "state3")
 
     def test_exception_thrown_if_requested_state_alias_not_provided(self):
         trans = EnvrStateAliasTranslator()
-        trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
-        with self.assertRaises(ValueError):
-            trans.get_state_alias(3)
+        trans.state_aliases = {0: "state1", 1: "state2", 2: "state3"}
+        with self.assertRaises(ValueError) as cm:
+            trans.state_alias(3)
+        self.assertEqual(cm.exception.message, "No alias specified for state "\
+            "with code '3'.")
 
     def test_can_add_condition_aliases(self):
         trans = EnvrStateAliasTranslator()
@@ -220,9 +222,9 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
         trans = EnvrStateAliasTranslator()
         trans.add_cond_aliases("cond2", {0: "low", 1: "high"})
         with self.assertRaises(ValueError) as cm:
-            trans.cond_alias("cond2", 0)
-            self.assertEqual(cm.exception.message, "No aliases specified for"\
-                " condition 'cond2'.")
+            trans.cond_alias("cond1", 0)
+        self.assertEqual(cm.exception.message, "No aliases specified for"\
+            " condition 'cond1'.")
 
     def test_exception_thrown_if_requested_cond_alias_not_provided(self):
         trans = EnvrStateAliasTranslator()
@@ -230,6 +232,6 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
         trans.add_cond_aliases("cond2", {0: "low", 1: "high"})
         with self.assertRaises(ValueError) as cm:
             trans.cond_alias("cond2", 2)
-            self.assertEqual(cm.exception.message, "No alias specified for"\
-                " condition 'cond2' with value '2'.")
+        self.assertEqual(cm.exception.message, "No alias specified for"\
+            " condition 'cond2' with value '2'.")
 

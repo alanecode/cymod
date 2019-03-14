@@ -274,7 +274,7 @@ from cymod import ServerGraphLoader, EnvrStateAliasTranslator
 
 # Set up EnvrStateAliasTranslator and configure with relevant model-specific data
 trans = EnvrStateAliasTranslator()
-trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
+trans.state_aliases = {0: "state1", 1: "state2", 2: "state3"}
 trans.add_cond_aliases("cond1", {0: False, 1: True})
 trans.add_cond_aliases("cond2", {0: "low", 1: "high"})
 

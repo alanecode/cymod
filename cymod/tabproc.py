@@ -17,6 +17,59 @@ from cymod.params import validate_cypher_params
 from cymod.cybase import CypherQuery, CypherQuerySource
 from cymod.customise import NodeLabels
 
+class EnvrStateAliasTranslator(object):
+    """Container for translations from codes to human readable values.
+
+    Sometimes it is useful to specify a transition table using codes rather
+    than human readable aliases. This class contains data which is used by a 
+    :obj:`TransTableProcessor` to perform this translation.
+
+    Attrs:
+        state_aliases (dict): Mapping from codes identifying states to names.
+        cond_aliases (:obj:`collections.OrderedDict`): Mappings from conditions
+            and their codes to corresponding values.
+    """
+
+    def __init__(self):
+        self.state_aliases = {}
+        self.cond_aliases = collections.OrderedDict()
+
+    def add_cond_aliases(self, cond_name, trans_dict):
+        """Add code-to-name translation for a state condition.
+        
+        Args:
+            cond_name (str): Name for the environmental condition.
+            trans_dict (dict): Dictionary containing mappings from codes to 
+                values for this envrionmental condition.
+        """
+        self.cond_aliases[cond_name] = trans_dict
+
+    @property
+    def all_conds(self):
+        return list(self.cond_aliases.keys())
+
+    def state_alias(self, state_code):
+        """Return the name of the state with the given code."""
+        try:
+            return self.state_aliases[state_code]
+        except KeyError:
+            raise ValueError("No alias specified for state with code '{0}'."\
+                .format(state_code))
+
+    def cond_alias(self, cond_name, cond_code):
+        """Return the name of the state condition value with the given code."""
+        try:
+            self.cond_aliases[cond_name]
+        except KeyError:
+            raise ValueError("No aliases specified for condition '{0}'."\
+                .format(cond_name))
+
+        try:
+            return self.cond_aliases[cond_name][cond_code]
+        except KeyError:
+            raise ValueError(("No alias specified for condition '{0}' with "
+                + "value '{1}'.").format(cond_name, cond_code))
+
 class TransTableProcessor(object):
     """Processes a :obj:`pandas.DataFrame` and produces Cypher queries.
 
