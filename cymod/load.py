@@ -55,7 +55,7 @@ class GraphLoader(object):
             self._load_job_queue.append(cff)
 
     def load_tabular(self, df, start_state_col, end_state_col, labels=None,
-        global_params=None):
+        global_params=None, state_alias_translator=None):
         """Generate Cypher queries based data in a :obj:`pandas.DataFrame`.
         
         Args:
@@ -66,10 +66,13 @@ class GraphLoader(object):
             end_state_col (str): Name of the column specifying the end state of
                 the transition described by each row.
             global_params (dict, optional): property name/ value pairs which 
-                will be added as parameters to every query.            
+                will be added as parameters to every query.     
+            state_alias_translator (:obj:`EnvrStateAliasTranslator`): Container 
+                for translations from codes to human readable values.       
         """
         tabular_src = TransTableProcessor(df, start_state_col, end_state_col, 
-            labels=labels, global_params=global_params)
+            labels=labels, global_params=global_params, 
+            state_alias_translator=state_alias_translator)
         self._load_job_queue.append(tabular_src)
 
     def iterqueries(self):

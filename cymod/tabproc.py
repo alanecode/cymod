@@ -161,9 +161,10 @@ class TransTableProcessor(object):
         aliased_df = df.copy()
 
         # Replace state codes with their names
-        for state_col in [self.start_state_col, self.end_state_col]:
-            aliased_df[state_col] = aliased_df[state_col]\
-                .apply(translator.state_alias)
+        if translator.state_aliases:
+            for state_col in [self.start_state_col, self.end_state_col]:
+                aliased_df[state_col] = aliased_df[state_col]\
+                    .apply(translator.state_alias)
         
         # Replace condition codes with their names
         for cond_col in translator.all_conds:            
