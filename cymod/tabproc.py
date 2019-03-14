@@ -9,6 +9,7 @@ data source.
 import re
 import json
 import collections
+import warnings
 
 import six
 import pandas as pd
@@ -85,7 +86,7 @@ class TransTableProcessor(object):
     """
 
     def __init__(self, df, start_state_col, end_state_col, labels=None,
-            global_params=None):
+            global_params=None, state_alias_translator=None):
         """
         Args:
             df (:obj:`pandas.DataFrame`): Table containing data which will be 
@@ -102,11 +103,17 @@ class TransTableProcessor(object):
                 Condition nodes are labelled in the generated graph.
             global_params (dict, optional): property name/ value pairs which 
                 will be added as parameters to every query.
+            state_alias_translator (:obj:`EnvrStateAliasTranslator`): Container 
+                for translations from codes to human readable values.
         """
-        self.df = df
         self.start_state_col = start_state_col
         self.end_state_col = end_state_col
         self.global_params = global_params
+
+        if state_alias_translator:
+            self.df = self._aliased_df_from_codes(df, state_alias_translator)
+        else:
+            self.df = df
 
         if labels:
             self.labels = labels
@@ -138,6 +145,36 @@ class TransTableProcessor(object):
         # Remove space after key:value colon
         string = re.sub(r"(:)( )([\d\"\'])", r"\1\3", string)
         return string[1:-1]
+
+    def _aliased_df_from_codes(self, df, translator):
+        """Convert codes to aliases in the transition table.
+
+        Args:
+            df (:obj:`pd.DataFrame`): Transition table data.
+            translator (:obj:`EnvrStateAliasTranslator`): Used to convert codes 
+                in the transition table to human readable aliases.
+
+        Returns:
+            :obj:`pd.DataFrame`: A version of the transition table with state 
+                and condition codes replaced with corresponding names.
+        """
+        aliased_df = df.copy()
+
+        # Replace state codes with their names
+        for state_col in [self.start_state_col, self.end_state_col]:
+            aliased_df[state_col] = aliased_df[state_col]\
+                .apply(translator.state_alias)
+        
+        # Replace condition codes with their names
+        for cond_col in translator.all_conds:            
+            if cond_col not in aliased_df.columns:
+                warnings.warn(("'{0}' given in translator but not"
+                    + " found in transition table.").format(cond_col))
+            else:
+                aliased_df[cond_col] = aliased_df[cond_col]\
+                    .apply(lambda x: translator.cond_alias(cond_col, x))
+                
+        return aliased_df
 
     def _add_global_params_to_query_string(self, query_str, global_params):
         """Modify a query string specifying node creation, add parameters.
@@ -231,18 +268,3 @@ class TransTableProcessor(object):
     def iterqueries(self):
         for i, row in self.df.iterrows():
             yield self._row_to_cypher_query(i, row)
-
-
-    
-
-        
-
-        
-
-
-
-    
-
-    
-
-    

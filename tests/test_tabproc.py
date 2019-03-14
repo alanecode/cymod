@@ -141,13 +141,8 @@ class TransTableProcessorTestCase(unittest.TestCase):
         self.assertEqual(query_iter.next().statement, query2.statement)
         self.assertRaises(StopIteration, query_iter.next)  
 
-    def test_state_alias_translator_can_be_used(self):
-        trans =  EnvrStateAliasTranslator()
-        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
-            state_alias_translator=trans)
-
-
     def test_coded_queries_correct(self):
+        """A state alias translator can be used to convert codes to names."""
         trans =  EnvrStateAliasTranslator()
         trans.state_aliases = {0: "state1", 1: "state2", 2: "state3"}
         trans.add_cond_aliases("cond1", {0: "low", 1: "high"})
