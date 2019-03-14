@@ -32,8 +32,8 @@ class TransTableProcessorTestCase(unittest.TestCase):
                 "start": [0, 1], 
                 "end": [1, 2], 
                 "cond1": [0, 1],
-                "cond2": [0, 2],
-                "trans_time": [2, 3]
+                "cond2": [2, 3],
+                "cond3": [1, 0]
         })  
 
     def tearDown(self):
@@ -139,7 +139,42 @@ class TransTableProcessorTestCase(unittest.TestCase):
         
         self.assertEqual(query_iter.next().statement, query1.statement)
         self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)   
+        self.assertRaises(StopIteration, query_iter.next)  
+
+    def test_state_alias_translator_can_be_used(self):
+        trans =  EnvrStateAliasTranslator()
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+            state_alias_translator=trans)
+
+
+    def test_coded_queries_correct(self):
+        trans =  EnvrStateAliasTranslator()
+        trans.set_state_aliases({0: "state1", 1: "state2", 2: "state3"})
+        trans.add_cond_aliases("cond1", {0: "low", 1: "high"})
+        trans.add_cond_aliases("cond3", {0: False, 1: True})
+
+        ttp = TransTableProcessor(self.demo_explicit_table, "start", "end",
+            state_alias_translator=trans)
+        query_iter = ttp.iterqueries()
+
+        query1 = CypherQuery('MERGE (start:State {code:"state1"}) '
+            + 'MERGE (end:State {code:"state2"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond1:"low", cond2:2, cond3:true})'
+            + '-[:CAUSES]->(trans);'
+            )
+
+        query2 = CypherQuery('MERGE (start:State {code:"state2"}) '
+            + 'MERGE (end:State {code:"state3"}) '
+            + 'MERGE (start)<-[:SOURCE]-(trans:Transition)-[:TARGET]->(end) '
+            + 'MERGE (cond:Condition {cond1:"high", cond2:3, cond3:false})'
+            + '-[:CAUSES]->(trans);'
+        )
+
+        self.assertEqual(query_iter.next().statement, query1.statement)
+        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertRaises(StopIteration, query_iter.next)
+
         
 class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
     """Tests for the ``EnvrStateAliasTranslator`` class.
