@@ -42,7 +42,7 @@ class CypherFile(object):
     def __init__(self, filename):
         # Matches either things in quotes or //...\n. Form a group on latter
         self._comment_pattern = re.compile(
-            r"\"[^\"\r\n]*\"|\"[^\"\r\n]*$|(\/\/.*\n)")
+            r"\"[^\"\r\n]*\"|\"[^\"\r\n]*$|(\/\/.*(?:$|\n))")
         self.filename = filename
         self.priority = 0
         self.query_start_clauses = ['START', 'MATCH', 'MERGE', 'CREATE']
