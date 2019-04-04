@@ -40,6 +40,9 @@ class CypherFile(object):
     """
 
     def __init__(self, filename):
+        # Matches either things in quotes or //...\n. Form a group on latter
+        self._comment_pattern = re.compile(
+            r"\"[^\"\r\n]*\"|\"[^\"\r\n]*$|(\/\/.*\n)")
         self.filename = filename
         self.priority = 0
         self.query_start_clauses = ['START', 'MATCH', 'MERGE', 'CREATE']
@@ -77,19 +80,17 @@ class CypherFile(object):
         Returns:
             str: Processed data from Cypher file.
         """
+        def comment_replacer(m):
+            """Use match object to construct replacement string."""
+            if m.group(1):
+                return ""
+            else:
+                # If no group 1 found return complete match
+                return m.group(0)
+    
         dat = self._read_cypher()
-        dat_list = dat.split('\n')
-        # filter out lines beginning with comment string //
-        dat_list = [l for l in dat_list if l[:2] != '//']
-
-        # filter out comments occuring at the end of a line
-        for i, l in enumerate(dat_list):
-            l_test = l.split('//')
-            if len(l_test) > 1:
-                # if a line contains //, take only the part before first //
-                dat_list[i] = l_test[0]
-
-        dat = ' '.join(dat_list)
+        dat = re.sub(self._comment_pattern, comment_replacer, dat)
+        dat = re.sub("\n", " ", dat)
         return dat
 
     def _extract_parameters(self):

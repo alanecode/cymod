@@ -229,7 +229,11 @@ class ServerGraphLoader(GraphLoader):
         """Load all queries loaded into :obj:`GraphLoader` into the graph."""
         for cypher_query in self.iterqueries():
             with self.driver.session() as session:
-                session.run(cypher_query.statement, cypher_query.params)
+                try:
+                    session.run(cypher_query.statement, cypher_query.params)
+                except CypherSyntaxError as e:
+                    print("Offending cypher query:\n" + repr(cypher_query))
+                    raise
 
 
 class EmbeddedGraphLoader(GraphLoader):
