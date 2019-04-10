@@ -19,3 +19,8 @@ cymod.egg-info/*
 
 # temporary demo file
 demo.py
+
+# private files
+docs/cymod-private\.org
+docs/images/example-network-schematic\.png
+docs/images/example-network-schematic\.svg

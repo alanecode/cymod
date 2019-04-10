@@ -1,5 +1,62 @@
 #+TITLE: Cymod development planning
 
+* Setting up a ~cymod~ project
+~cymod~ aims to allow the modeller as much flexibility as possible when
+describing a model using the Cypher language. 
+
+Key concepts:
+- *Cypher file* a plain text file containing one or more Cypher queries
+  describing the model and associated parameters
+- *File priority parameter* a Cypher parameter (with integer value 0,1,2...)
+  with special meaning in the context of Cymod. If a file has a ~priority~
+  parameter specified, this will control the order in which its queries will be
+  applied to the database with respect to other files. This is important in
+  cases where the queries in one file refer to objects which are assumed to
+  have been created by queries in another file.
+
+#+LATEX_HEADER: \usepackage{dirtree}
+#+BEGIN_EXPORT latex
+\begin{figure}
+  \dirtree{%
+    .1 /.
+    .2 generate\_graph.py.
+    .2 cypher-files.
+    .3 topic1.
+    .4 queries1.cyp.
+    .4 queries2.cyp.
+    .3 topic2.
+    .4 queries3.cyp.
+  }
+  \caption{Illustration of the directory structure for a typical ~cymod~ project.
+  }
+  \label{fig:cypher-project-layout}
+\end{figure}
+
+#+END_EXPORT
+
+The queries in these files can then be loaded into the local Neo4j graph
+database using the Python code in Fig.\nbsp{}\ref{code:generate_graph}. 
+
+#+ATTR_LaTeX: :placement [ht!]
+#+CAPTION: Python code required to load the cypher queries contained in the ~cypher-files~ directory into the Neo4j database. The user first provides their Neo4j database credentials. They then pass the path of the directory containing Cypher files to ~cymod~'s ~ServerGraphLoader.load_cypher~ method which reads and organises queries from the identified files. Finally the ~ServerGraphLoader.commit~ method executes the collected queries, writing the model to the database ready for further visualisation and analysis.
+#+NAME: code:generate_graph
+#+BEGIN_SRC python
+"""
+generate_graph.py
+~~~~~~~~~~~~~~~~~
+
+Load Cypher queries contained in files in `cypher-files` to Neo4j database.
+"""
+
+from cymod import ServerGraphLoader
+
+# initialise a ServerGraphLoader object
+gl = ServerGraphLoader(user="username", password="password")
+gl.load_cypher("cypher-files")
+gl.commit()
+#+END_SRC
+
+
 * Versions
 ** Version 0.1
 *** Completion criteria 
@@ -386,8 +443,11 @@ This might manifest itself by either:
 
 
 
+* Integration with Java programs
+:PROPERTIES:
+:CUSTOM_ID: cymod-integration-agrosuccess
+:END:
 
-* Integration with AgroSuccess
 ** With Jython
 As of [2019-01-15 Tue] AgroSuccess has only been tested with Cymod v0.0.1
 running within jython v2.7.0
@@ -403,5 +463,6 @@ running within jython v2.7.0
 - Recommended [[https://stackoverflow.com/questions/8898765/calling-python-in-java#answer-42844490][in this SO answer]] 
 - Developed to support writing python extension for established scientific
   application written in Java
+
 
 
