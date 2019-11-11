@@ -20,6 +20,9 @@ cymod.egg-info/*
 # temporary demo file
 demo.py
 
+# tox virtualenvs
+.tox/
+
 # private files
 docs/cymod-private\.org
 docs/images/example-network-schematic\.png

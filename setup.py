@@ -25,6 +25,10 @@ REQUIRED = [
     'neo4j-driver>=1.6.0'
 ]
 
+TEST_REQUIRED = [
+    'pandas',
+]
+
 # What packages are optional?
 EXTRAS = {
     # 'fancy feature': ['django'],
@@ -110,6 +114,7 @@ setup(
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     install_requires=REQUIRED,
+    tests_require=TEST_REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
     license='MIT',
