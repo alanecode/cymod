@@ -9,7 +9,8 @@ cypher queries.
 import json
 
 import six
-    
+
+
 class CypherQuerySource(object):
     """Container for information about a Cypher query's original source."""
 
@@ -35,17 +36,20 @@ class CypherQuerySource(object):
     @ref_type.setter
     def ref_type(self, val):
         if val not in ["cypher", "tabular"]:
-            raise ValueError("CypherQuerySource.ref_type must be either " \
-            "'cypher' or 'tabular'")
+            raise ValueError(
+                "CypherQuerySource.ref_type must be either " "'cypher' or 'tabular'"
+            )
         self._ref_type = val
 
     def __repr__(self):
-        return "ref_type: {0}\nindex: {1}\nref: {2}" \
-        .format(self.ref_type, self.index, str(self.ref))
+        return "ref_type: {0}\nindex: {1}\nref: {2}".format(
+            self.ref_type, self.index, str(self.ref)
+        )
+
 
 class CypherQuery(object):
     """Container for data speficying an individual Cypher query."""
-    
+
     def __init__(self, statement, params=None, source=None):
         """
         Args:
@@ -56,22 +60,33 @@ class CypherQuery(object):
         """
         self.statement = statement
         self.params = params
-        self.source = source    
+        self.source = source
 
     def __repr__(self):
-        return "[statement: " + self.statement + "\n params: " + \
-            str(self.params) + "\n source: [\n" + str(self.source) + "]\n]"
+        return (
+            "[statement: "
+            + self.statement
+            + "\n params: "
+            + str(self.params)
+            + "\n source: [\n"
+            + str(self.source)
+            + "]\n]"
+        )
 
     def __eq__(self, other):
         """Override the default Equals behavior"""
         if isinstance(other, self.__class__):
-            return self.statement == other.statement \
-                and self.params == other.params \
+            return (
+                self.statement == other.statement
+                and self.params == other.params
                 and self.source == other.source
+            )
         return False
 
     def __ne__(self, other):
         """Override the default Unequal behavior"""
-        return self.statement != other.statement \
-                or self.params != other.params \
-                or self.source != other.source
+        return (
+            self.statement != other.statement
+            or self.params != other.params
+            or self.source != other.source
+        )

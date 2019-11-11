@@ -7,8 +7,9 @@ This module contains functions used to parse external files specifying global
 parameters intended to be applied to every node in a model. Sets of parameters
 are returned as python dicts. 
 """
-import json 
+import json
 import six
+
 
 def all_keys_are_strings_p(test_dict):
     """Check all keys in dict are strings. Returns True if so, o/w False.
@@ -22,6 +23,7 @@ def all_keys_are_strings_p(test_dict):
             return False
     return True
 
+
 def validate_cypher_params(test_dict):
     """Ensure that supplied dictionary specifies valid Cypher parameters.
 
@@ -29,10 +31,10 @@ def validate_cypher_params(test_dict):
         test_dict (dict): Dictionary containing parameters to be validated.
     """
     if not all_keys_are_strings_p(test_dict):
-        raise TypeError("All parameter names must be strings:\n" \
-            + str(test_dict))
+        raise TypeError("All parameter names must be strings:\n" + str(test_dict))
 
     return True
+
 
 def read_json_params(fname):
     """Read json file, return dict."""

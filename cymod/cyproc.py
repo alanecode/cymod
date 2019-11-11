@@ -17,6 +17,7 @@ import six
 
 from cybase import CypherQuery, CypherQuerySource
 
+
 class CypherFile(object):
     """Reads, parses and reports CypherQuery objects for a given file name.
 
@@ -42,16 +43,17 @@ class CypherFile(object):
     def __init__(self, filename):
         # Matches either things in quotes or //...\n. Form a group on latter
         self._comment_pattern = re.compile(
-            r"\"[^\"\r\n]*\"|\"[^\"\r\n]*$|(\/\/.*(?:$|\n))")
+            r"\"[^\"\r\n]*\"|\"[^\"\r\n]*$|(\/\/.*(?:$|\n))"
+        )
         self.filename = filename
         self.priority = 0
-        self.query_start_clauses = ['START', 'MATCH', 'MERGE', 'CREATE']
+        self.query_start_clauses = ["START", "MATCH", "MERGE", "CREATE"]
         self._cached_data = self._parse_queries()
 
     @property
     def queries(self):
         """tuple of :obj:`CypherQuery`: Cypher queries identified in file."""
-        if not(self._cached_data):
+        if not (self._cached_data):
             self._cached_data = self._parse_queries()
 
         return tuple(self._cached_data)
@@ -66,12 +68,12 @@ class CypherFile(object):
             str: Unprocessed data from Cypher file.
         """
         try:
-            with open(self.filename, 'r') as f:
+            with open(self.filename, "r") as f:
                 dat = f.read()
                 return dat
 
         except IOError as e:
-            print('Could not open Cypher file. ', e)
+            print("Could not open Cypher file. ", e)
             raise
 
     def _remove_comments_and_newlines(self):
@@ -80,6 +82,7 @@ class CypherFile(object):
         Returns:
             str: Processed data from Cypher file.
         """
+
         def comment_replacer(m):
             """Use match object to construct replacement string."""
             if m.group(1):
@@ -87,7 +90,7 @@ class CypherFile(object):
             else:
                 # If no group 1 found return complete match
                 return m.group(0)
-    
+
         dat = self._read_cypher()
         dat = re.sub(self._comment_pattern, comment_replacer, dat)
         dat = re.sub("\n", " ", dat)
@@ -104,10 +107,10 @@ class CypherFile(object):
                 tuple will be None.
         """
         dat = self._remove_comments_and_newlines()
-        re_prefix = r'\s*\{[\s*\S*]*\}\s*'
-        patterns = [re.compile(re_prefix+clause)
-                    for clause
-                    in self.query_start_clauses]
+        re_prefix = r"\s*\{[\s*\S*]*\}\s*"
+        patterns = [
+            re.compile(re_prefix + clause) for clause in self.query_start_clauses
+        ]
 
         for i, p in enumerate(patterns):
             match = p.match(dat)
@@ -121,14 +124,14 @@ class CypherFile(object):
 
         try:
             param_dict = json.loads(params)
-            try: 
+            try:
                 # set priority attributre if given in file. o/w is 0.
                 self.priority = param_dict["priority"]
                 # remove priority from remaining parameters
                 del param_dict["priority"]
             except KeyError:
-                pass   
-                 
+                pass
+
             return param_dict, queries
         except UnboundLocalError:
             return {}, dat
@@ -154,11 +157,11 @@ class CypherFile(object):
         relevant_dict = {}
         r = re.compile(r"(\$)([a-zA-Z1-9_]*)")
         for match in r.finditer(statement):
-            param_name = match.group(2) # param name excluding $ sign
+            param_name = match.group(2)  # param name excluding $ sign
             relevant_dict[param_name] = None
             if param_name in all_params.keys():
                 relevant_dict[param_name] = all_params[param_name]
-        if relevant_dict:            
+        if relevant_dict:
             return relevant_dict
         else:
             # params should be empty dict if no matches found
@@ -179,14 +182,19 @@ class CypherFile(object):
         queries = dat[1]
         # only include non-empty strings in results (prevents whitespace at
         # end of file getting an element on its own).
-        query_string_list = [q.lstrip() + ';' for q in queries.split(';')
-                        if q.replace(' ', '')]
+        query_string_list = [
+            q.lstrip() + ";" for q in queries.split(";") if q.replace(" ", "")
+        ]
 
         query_list = []
         for i, statement in enumerate(query_string_list):
-            query_list.append(CypherQuery(statement,
-                params=self._match_params_to_statement(statement, dat[0]),
-                source=CypherQuerySource(self.filename, "cypher", i)))
+            query_list.append(
+                CypherQuery(
+                    statement,
+                    params=self._match_params_to_statement(statement, dat[0]),
+                    source=CypherQuerySource(self.filename, "cypher", i),
+                )
+            )
 
         if len(query_list) == 0:
             warnings.warn("No queries found in " + self.filename, UserWarning)
@@ -195,13 +203,12 @@ class CypherFile(object):
 
     def __repr__(self):
         # filename, prioriry, queries
-        fname_str = "file name: " + self.filename 
+        fname_str = "file name: " + self.filename
         priority_str = "priority: " + str(self.priority)
         queries_str = "queries:\n"
         for q in self.queries:
             queries_str += repr(q) + "\n"
-        return "[\n" + fname_str + "\n" + priority_str + "\n" \
-            + queries_str + "]"        
+        return "[\n" + fname_str + "\n" + priority_str + "\n" + queries_str + "]"
 
 
 class CypherFileFinder(object):
@@ -223,8 +230,9 @@ class CypherFileFinder(object):
                 None. 
     """
 
-    def __init__(self, root_dir, cypher_exts=[".cypher", ".cql", ".cyp"],
-                 cypher_file_suffix=None):
+    def __init__(
+        self, root_dir, cypher_exts=[".cypher", ".cql", ".cyp"], cypher_file_suffix=None
+    ):
         self.root_dir = root_dir
         self.cypher_exts = cypher_exts
         self.cypher_file_suffix = cypher_file_suffix
@@ -242,8 +250,7 @@ class CypherFileFinder(object):
             for f in files:
                 if f.endswith(tuple(self.cypher_exts)):
                     if self.cypher_file_suffix:
-                        test_suffix \
-                            = f.split('.')[0][-len(self.cypher_file_suffix):]
+                        test_suffix = f.split(".")[0][-len(self.cypher_file_suffix) :]
                         if test_suffix == self.cypher_file_suffix:
                             fnames.append(os.path.join(dirpath, f))
                     else:
@@ -251,7 +258,6 @@ class CypherFileFinder(object):
                         fnames.append(os.path.join(dirpath, f))
 
         return [CypherFile(f) for f in fnames]
-
 
     def iterfiles(self, priority_sorted=False):
         """Yields CypherFile objects representing discovered files."""
@@ -267,5 +273,4 @@ class CypherFileFinder(object):
         s = "[\n"
         for f in self.iterfiles():
             s += f.filename + "\n"
-        return s+ "]"
-
+        return s + "]"

@@ -8,6 +8,7 @@ import unittest
 
 from cymod.customise import NodeLabels
 
+
 class CustomLabelsTestCase(unittest.TestCase):
     def setUp(self):
         pass
@@ -18,8 +19,13 @@ class CustomLabelsTestCase(unittest.TestCase):
     def test_error_if_invalid_label_given(self):
         """ValueError raised if nonsense original node label given."""
         with self.assertRaises(ValueError):
-            NodeLabels({"State": "MyState","BadTransition": "MyTransition", 
-                "BadCondition": "MyCondition"})
+            NodeLabels(
+                {
+                    "State": "MyState",
+                    "BadTransition": "MyTransition",
+                    "BadCondition": "MyCondition",
+                }
+            )
 
     def test_custom_values_returned_when_specified(self):
         cl = NodeLabels({"State": "MyState"})
@@ -29,6 +35,3 @@ class CustomLabelsTestCase(unittest.TestCase):
         cl = NodeLabels({"State": "MyState"})
         self.assertEqual(cl.transition, "Transition")
         self.assertEqual(cl.condition, "Condition")
-
-    
-

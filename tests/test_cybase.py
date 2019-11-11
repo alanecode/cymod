@@ -13,16 +13,19 @@ import pandas as pd
 
 from cymod.cybase import CypherQuery, CypherQuerySource
 
+
 class CypherQuerySourceTestCase(unittest.TestCase):
     def setUp(self):
-        self.demo_table = pd.DataFrame({
-            "start": ["state1", "state2"], 
-            "end": ["state2", "state3"], 
-            "cond": ["low", "high"]
-        })
+        self.demo_table = pd.DataFrame(
+            {
+                "start": ["state1", "state2"],
+                "end": ["state2", "state3"],
+                "cond": ["low", "high"],
+            }
+        )
 
     def tearDown(self):
-        del self.demo_table    
+        del self.demo_table
 
     def test_ref(self):
         """CypherQuerySource.file_name returns source file name."""
@@ -45,14 +48,16 @@ class CypherQuerySourceTestCase(unittest.TestCase):
     def test_repr(self):
         """__repr__ should be as expected."""
         s1 = CypherQuerySource("queries.cql", "cypher", 10)
-        self.assertEqual(str(s1), 
-            "ref_type: cypher\nindex: 10\nref: queries.cql")
+        self.assertEqual(str(s1), "ref_type: cypher\nindex: 10\nref: queries.cql")
 
         s2 = CypherQuerySource(self.demo_table, "tabular", 2)
-        self.assertEqual(str(s2), 
-            "ref_type: tabular\nindex: 2\nref: " \
-            "   cond     end   start\n0   low  state2  state1\n"\
-            "1  high  state3  state2")
+        self.assertEqual(
+            str(s2),
+            "ref_type: tabular\nindex: 2\nref: "
+            "   cond     end   start\n0   low  state2  state1\n"
+            "1  high  state3  state2",
+        )
+
 
 class CypherQueryTestCase(unittest.TestCase):
     def test_statement(self):
@@ -62,21 +67,16 @@ class CypherQueryTestCase(unittest.TestCase):
 
     def test_params(self):
         """CypherQuery.params should return parameter dict."""
-        q = CypherQuery("MATCH (n) WHERE n.prop=$prop RETURN n LIMIT 10;",
-                params={"prop": "test-prop"})
+        q = CypherQuery(
+            "MATCH (n) WHERE n.prop=$prop RETURN n LIMIT 10;",
+            params={"prop": "test-prop"},
+        )
         self.assertEqual(q.params, {"prop": "test-prop"})
 
     def test_source(self):
         """CypherQuery.source should return CypherQuerySource object."""
-        q = CypherQuery("MATCH (n) RETURN n LIMIT 10;", 
-            source=CypherQuerySource("queries.cql", "cypher", 10))
+        q = CypherQuery(
+            "MATCH (n) RETURN n LIMIT 10;",
+            source=CypherQuerySource("queries.cql", "cypher", 10),
+        )
         self.assertIsInstance(q.source, CypherQuerySource)
-
-
-
-
-
-
-
-
-

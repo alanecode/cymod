@@ -31,11 +31,11 @@ class GraphLoader(object):
             objects which should be handled in order to generate cypher 
             queries.             
     """
-    def __init__(self):
-        self._load_job_queue = [] 
 
-    def load_cypher(self, root_dir, cypher_file_suffix=None, 
-        global_params=None):
+    def __init__(self):
+        self._load_job_queue = []
+
+    def load_cypher(self, root_dir, cypher_file_suffix=None, global_params=None):
         """Add Cypher files to the list of jobs to be loaded.
         
         Args:
@@ -50,12 +50,20 @@ class GraphLoader(object):
         cff = CypherFileFinder(root_dir, cypher_file_suffix=cypher_file_suffix)
         if global_params:
             self._load_job_queue.append(
-                {"file_finder": cff, "global_params": global_params})
+                {"file_finder": cff, "global_params": global_params}
+            )
         else:
             self._load_job_queue.append(cff)
 
-    def load_tabular(self, df, start_state_col, end_state_col, labels=None,
-        global_params=None, state_alias_translator=None):
+    def load_tabular(
+        self,
+        df,
+        start_state_col,
+        end_state_col,
+        labels=None,
+        global_params=None,
+        state_alias_translator=None,
+    ):
         """Generate Cypher queries based data in a :obj:`pandas.DataFrame`.
         
         Args:
@@ -70,9 +78,14 @@ class GraphLoader(object):
             state_alias_translator (:obj:`EnvrStateAliasTranslator`): Container 
                 for translations from codes to human readable values.       
         """
-        tabular_src = TransTableProcessor(df, start_state_col, end_state_col, 
-            labels=labels, global_params=global_params, 
-            state_alias_translator=state_alias_translator)
+        tabular_src = TransTableProcessor(
+            df,
+            start_state_col,
+            end_state_col,
+            labels=labels,
+            global_params=global_params,
+            state_alias_translator=state_alias_translator,
+        )
         self._load_job_queue.append(tabular_src)
 
     def iterqueries(self):
@@ -83,6 +96,7 @@ class GraphLoader(object):
                 order in which they were loaded into the :obj:`GraphLoader` 
                 instance.        
         """
+
         def handle_cypher_files_no_global_params(file_finder):
             """Yield queries from :obj:`CypherFileFinder` without extra params.
             
@@ -117,21 +131,26 @@ class GraphLoader(object):
             global_params = file_finder_dict["global_params"]
             for cypher_file in cff.iterfiles(priority_sorted=True):
                 for query in cypher_file.queries:
-                    # Get list of parameters in query with None value and 
+                    # Get list of parameters in query with None value and
                     # attempt to replace None with value from global_params
-                    unspecified_native_params = [k for k in query.params.keys() 
-                        if not query.params[k]]
+                    unspecified_native_params = [
+                        k for k in query.params.keys() if not query.params[k]
+                    ]
                     for unspecified_param in unspecified_native_params:
                         try:
-                            query.params[unspecified_param] \
-                                = global_params[unspecified_param]
+                            query.params[unspecified_param] = global_params[
+                                unspecified_param
+                            ]
                         except KeyError:
-                            # Raise an exception if a query has a required 
+                            # Raise an exception if a query has a required
                             # None parameter at this stage
-                            raise KeyError("The following query requires  a " 
+                            raise KeyError(
+                                "The following query requires  a "
                                 + "parameter not given in its originating "
                                 + "Cypher file, nor in the provided global "
-                                + "parameters:\n" + str(query))
+                                + "parameters:\n"
+                                + str(query)
+                            )
                     yield query
 
         def handle_tabular_data_source(tabular_source):
@@ -149,7 +168,7 @@ class GraphLoader(object):
         handler = {
             CypherFileFinder: handle_cypher_files_no_global_params,
             dict: handle_cypher_files_wi_global_params,
-            TransTableProcessor: handle_tabular_data_source
+            TransTableProcessor: handle_tabular_data_source,
         }
 
         for load_job in self._load_job_queue:
@@ -158,6 +177,7 @@ class GraphLoader(object):
                     for query in handler[t](load_job):
                         yield query
                     break
+
 
 class ServerGraphLoader(GraphLoader):
     """Loads Cypher data into a running Neo4j database instance."""
@@ -178,8 +198,8 @@ class ServerGraphLoader(GraphLoader):
             driver = GraphDatabase.driver(uri, auth=(username, password))
             return driver
         except Exception as e:
-            print('Could not load graph. Check password.', file=sys.stderr)
-            print('Exception: %s' % str(e), file=sys.stderr)
+            print("Could not load graph. Check password.", file=sys.stderr)
+            print("Exception: %s" % str(e), file=sys.stderr)
             sys.exit(1)
 
     def refresh_graph(self, params):
@@ -197,6 +217,7 @@ class ServerGraphLoader(GraphLoader):
                 properties matching these values will be deleted from the 
                 graph.
         """
+
         def remove_all_nodes(tx, params):
             """Remove nodes with properties specified in global_params.
 
@@ -209,20 +230,25 @@ class ServerGraphLoader(GraphLoader):
                     refreshed.
             """
             # construct query string from provided global_params dict
-            WHERE_CLAUSE = ' AND '.join(['n.'+str(k)+'='+'"'+str(v)+'"'
-                                         for (k, v)
-                                         in iteritems(params)])
-            q = 'MATCH (n) WHERE '+WHERE_CLAUSE+' DETACH DELETE n'
-            print('Removing existing nodes matching global parameters')
+            WHERE_CLAUSE = " AND ".join(
+                [
+                    "n." + str(k) + "=" + '"' + str(v) + '"'
+                    for (k, v) in iteritems(params)
+                ]
+            )
+            q = "MATCH (n) WHERE " + WHERE_CLAUSE + " DETACH DELETE n"
+            print("Removing existing nodes matching global parameters")
             tx.run(q)
 
         with self.driver.session() as session:
             try:
                 session.write_transaction(remove_all_nodes, params)
             except CypherSyntaxError as e:
-                print('Error in Cypher refreshing database. Check syntax.',
-                      file=sys.stderr)
-                print('Exception: %s' % str(e), file=sys.stderr)
+                print(
+                    "Error in Cypher refreshing database. Check syntax.",
+                    file=sys.stderr,
+                )
+                print("Exception: %s" % str(e), file=sys.stderr)
                 sys.exit(1)
 
     def commit(self):
@@ -247,6 +273,7 @@ class EmbeddedGraphLoader(GraphLoader):
     in situations in which a Java application will have access to a JRE but no 
     Neo4j server will be available.
     """
+
     def __init__(self):
         super(EmbeddedGraphLoader, self).__init__()
 
@@ -266,8 +293,9 @@ class EmbeddedGraphLoader(GraphLoader):
         working_string = cypher_query.statement
         for match in param_matches:
             param_string = "".join(match)
-            working_string = working_string.replace(param_string, 
-                str(cypher_query.params[match[1]]))
+            working_string = working_string.replace(
+                param_string, str(cypher_query.params[match[1]])
+            )
         return working_string
 
     def query_generator(self):

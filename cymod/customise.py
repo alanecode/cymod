@@ -6,6 +6,7 @@ This module contains classes used to customise features of cymod to tailor it
 to particular subject domains.
 """
 
+
 class NodeLabels(object):
     """Contains data necessary to cusomise transition table node labels.
     
@@ -18,6 +19,7 @@ class NodeLabels(object):
     model, we wish to make these customisable. This class facilitates that
     customisation.
     """
+
     def __init__(self, label_map=None):
         """
         Args:
@@ -28,10 +30,10 @@ class NodeLabels(object):
         """
         self.label_map = label_map
 
-    @property 
+    @property
     def label_map(self):
         return self._label_map
-    
+
     @label_map.setter
     def label_map(self, value):
         bad_labels = []
@@ -40,9 +42,12 @@ class NodeLabels(object):
                 if k not in ["State", "Transition", "Condition"]:
                     bad_labels.append(k)
             if bad_labels:
-                raise ValueError("The only customisable labels are 'State', "
-                + "'Transition' and 'Condition'. The following are not  "
-                + "allowed: " + str(bad_labels))
+                raise ValueError(
+                    "The only customisable labels are 'State', "
+                    + "'Transition' and 'Condition'. The following are not  "
+                    + "allowed: "
+                    + str(bad_labels)
+                )
             else:
                 self._label_map = value
         except AttributeError:
@@ -68,5 +73,3 @@ class NodeLabels(object):
             return self.label_map["Condition"]
         except KeyError:
             return "Condition"
-
-    

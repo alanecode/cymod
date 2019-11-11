@@ -18,6 +18,7 @@ from cymod.params import validate_cypher_params
 from cymod.cybase import CypherQuery, CypherQuerySource
 from cymod.customise import NodeLabels
 
+
 class EnvrStateAliasTranslator(object):
     """Container for translations from codes to human readable values.
 
@@ -54,22 +55,28 @@ class EnvrStateAliasTranslator(object):
         try:
             return self.state_aliases[state_code]
         except KeyError:
-            raise ValueError("No alias specified for state with code '{0}'."\
-                .format(state_code))
+            raise ValueError(
+                "No alias specified for state with code '{0}'.".format(state_code)
+            )
 
     def cond_alias(self, cond_name, cond_code):
         """Return the name of the state condition value with the given code."""
         try:
             self.cond_aliases[cond_name]
         except KeyError:
-            raise ValueError("No aliases specified for condition '{0}'."\
-                .format(cond_name))
+            raise ValueError(
+                "No aliases specified for condition '{0}'.".format(cond_name)
+            )
 
         try:
             return self.cond_aliases[cond_name][cond_code]
         except KeyError:
-            raise ValueError(("No alias specified for condition '{0}' with "
-                + "value '{1}'.").format(cond_name, cond_code))
+            raise ValueError(
+                (
+                    "No alias specified for condition '{0}' with " + "value '{1}'."
+                ).format(cond_name, cond_code)
+            )
+
 
 class TransTableProcessor(object):
     """Processes a :obj:`pandas.DataFrame` and produces Cypher queries.
@@ -85,8 +92,15 @@ class TransTableProcessor(object):
             specified or not.
     """
 
-    def __init__(self, df, start_state_col, end_state_col, labels=None,
-            global_params=None, state_alias_translator=None):
+    def __init__(
+        self,
+        df,
+        start_state_col,
+        end_state_col,
+        labels=None,
+        global_params=None,
+        state_alias_translator=None,
+    ):
         """
         Args:
             df (:obj:`pandas.DataFrame`): Table containing data which will be 
@@ -163,18 +177,24 @@ class TransTableProcessor(object):
         # Replace state codes with their names
         if translator.state_aliases:
             for state_col in [self.start_state_col, self.end_state_col]:
-                aliased_df[state_col] = aliased_df[state_col]\
-                    .apply(translator.state_alias)
-        
+                aliased_df[state_col] = aliased_df[state_col].apply(
+                    translator.state_alias
+                )
+
         # Replace condition codes with their names
-        for cond_col in translator.all_conds:            
+        for cond_col in translator.all_conds:
             if cond_col not in aliased_df.columns:
-                warnings.warn(("'{0}' given in translator but not"
-                    + " found in transition table.").format(cond_col))
+                warnings.warn(
+                    (
+                        "'{0}' given in translator but not"
+                        + " found in transition table."
+                    ).format(cond_col)
+                )
             else:
-                aliased_df[cond_col] = aliased_df[cond_col]\
-                    .apply(lambda x: translator.cond_alias(cond_col, x))
-                
+                aliased_df[cond_col] = aliased_df[cond_col].apply(
+                    lambda x: translator.cond_alias(cond_col, x)
+                )
+
         return aliased_df
 
     def _add_global_params_to_query_string(self, query_str, global_params):
@@ -198,8 +218,8 @@ class TransTableProcessor(object):
             node_str = node.group()
             prop_match = self.props_re.search(node_str)
             if prop_match:
-                beginning = node_str[:prop_match.end()-1]
-                ending = node_str[prop_match.end()-1:]
+                beginning = node_str[: prop_match.end() - 1]
+                ending = node_str[prop_match.end() - 1 :]
                 new_node_str = beginning + ", " + param_str + ending
             else:
                 beginning = node_str[:-1]
@@ -212,17 +232,17 @@ class TransTableProcessor(object):
 
     def _row_to_query_statement_string(self, row):
         """Build the string specifying the cypher query for a single row."""
-        start_node = 'MERGE (start:{state_lab} {{code:"{start_state}"}})'\
-            .format(state_lab=self.labels.state, 
-                start_state=row[self.start_state_col])
+        start_node = 'MERGE (start:{state_lab} {{code:"{start_state}"}})'.format(
+            state_lab=self.labels.state, start_state=row[self.start_state_col]
+        )
 
-        end_node = 'MERGE (end:{state_lab} {{code:"{end_state}"}})'\
-            .format(state_lab=self.labels.state, 
-                end_state=row[self.end_state_col])
+        end_node = 'MERGE (end:{state_lab} {{code:"{end_state}"}})'.format(
+            state_lab=self.labels.state, end_state=row[self.end_state_col]
+        )
 
-        transition \
-            = 'MERGE (start)<-[:SOURCE]-(trans:{trans_lab})-[:TARGET]->(end)'\
-                . format(trans_lab=self.labels.transition)
+        transition = "MERGE (start)<-[:SOURCE]-(trans:{trans_lab})-[:TARGET]->(end)".format(
+            trans_lab=self.labels.transition
+        )
 
         def _conditions_str(row, start_state_col, end_state_col):
             """Build the string used to express transition conditions.
@@ -231,33 +251,35 @@ class TransTableProcessor(object):
             properties.
             """
             row = row.drop([start_state_col, end_state_col])
-            count = 0                                
-            s = ""                                   
-            for i, val in row.iteritems():   
-                s += i + ":"                         
+            count = 0
+            s = ""
+            for i, val in row.iteritems():
+                s += i + ":"
                 if isinstance(val, six.string_types):
                     s += '"' + val + '"'
                 elif isinstance(val, bool):
                     s += str(val).lower()
                 else:
-                    s += str(val)    
+                    s += str(val)
                 if count < len(row) - 1:
-                    s += ", " 
+                    s += ", "
                 count += 1
 
             return "{" + s + "}"
 
-        condition = 'MERGE (cond:{cond_lab} {cond_str})-[:CAUSES]->(trans)'\
-                .format(cond_lab=self.labels.condition, 
-                    cond_str=_conditions_str(row, self.start_state_col, 
-                        self.end_state_col))
+        condition = "MERGE (cond:{cond_lab} {cond_str})-[:CAUSES]->(trans)".format(
+            cond_lab=self.labels.condition,
+            cond_str=_conditions_str(row, self.start_state_col, self.end_state_col),
+        )
 
-        query_str =  start_node + " " + end_node + " " + transition + " "\
-            + condition + ";"
+        query_str = (
+            start_node + " " + end_node + " " + transition + " " + condition + ";"
+        )
 
         if self.global_params:
-            query_str = self._add_global_params_to_query_string(query_str, 
-                self.global_params)
+            query_str = self._add_global_params_to_query_string(
+                query_str, self.global_params
+            )
 
         return query_str
 
