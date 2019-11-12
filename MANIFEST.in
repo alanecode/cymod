@@ -1,0 +1,5 @@
+include README.rst
+include LICENSE
+include tests/*.py
+recursive-include tests/resources/ *.csv *.cql *.cypher *.json
+include tox.ini
