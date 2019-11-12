@@ -43,3 +43,8 @@ database with the following Python commands:
 .. _Cypher: https://neo4j.com/developer/cypher/
 .. _Neo4j: https://neo4j.com/
 .. _STMs: http://doi.org/10.1007/978-3-319-46709-2_9
+
+Supported Python versions
+-------------------------
+
+Tested against Python 2.7, 3.5, 3.6, and 3.7.

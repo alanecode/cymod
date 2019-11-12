@@ -3,8 +3,11 @@
 Tests for cymod.tabproc
 """
 from __future__ import print_function
+from functools import partial
 
 import unittest
+
+import six
 
 import pandas as pd
 
@@ -65,13 +68,13 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
         )
 
-        # this_query = query_iter.next()
-        self.assertEqual(query_iter.next().statement, query1.statement)
+        # this_query = six.next(query_iter)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
 
         # this_query = query_iter.next()
-        self.assertEqual(query_iter.next().statement, query2.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
 
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_explicit_codes_queries_multiple_conds_correct(self):
         """Correct queries with multiple conditions."""
@@ -94,9 +97,9 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + "-[:CAUSES]->(trans);"
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_global_params_included_in_node_properties(self):
         """If global parameters specified, should apply to every node."""
@@ -127,9 +130,9 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + "-[:CAUSES]->(trans);"
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_custom_labels_can_be_applied(self):
         """If custom labels specified, should apply to relevant nodes."""
@@ -156,9 +159,9 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_coded_queries_correct(self):
         """A state alias translator can be used to convert codes to names."""
@@ -188,9 +191,9 @@ class TransTableProcessorTestCase(unittest.TestCase):
             + "-[:CAUSES]->(trans);"
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
 
 class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
@@ -216,7 +219,7 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             trans.state_alias(3)
         self.assertEqual(
-            cm.exception.message, "No alias specified for state " "with code '3'."
+            str(cm.exception), "No alias specified for state " "with code '3'."
         )
 
     def test_can_add_condition_aliases(self):
@@ -243,7 +246,7 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             trans.cond_alias("cond1", 0)
         self.assertEqual(
-            cm.exception.message, "No aliases specified for" " condition 'cond1'."
+            str(cm.exception), "No aliases specified for" " condition 'cond1'."
         )
 
     def test_exception_thrown_if_requested_cond_alias_not_provided(self):
@@ -253,6 +256,6 @@ class EnvrStateAliasTranslatorTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             trans.cond_alias("cond2", 2)
         self.assertEqual(
-            cm.exception.message,
+            str(cm.exception),
             "No alias specified for" " condition 'cond2' with value '2'.",
         )

@@ -17,13 +17,13 @@ DESCRIPTION = "Process files containing Cypher queries describing complicated mo
 URL = "https://github.com/alanecode/cymod"
 EMAIL = "ajlane50@gmail.com"
 AUTHOR = "Andrew Lane"
-REQUIRES_PYTHON = ">=2.7, <3"
+REQUIRES_PYTHON = ">=2.7"
 VERSION = "0.0.5"
 
 # What packages are required for this module to be executed?
-REQUIRED = ["neo4j-driver>=1.6.0"]
+REQUIRED = ["neo4j-driver>=1.6.0", "pandas"]
 
-TEST_REQUIRED = ["pandas"]
+TEST_REQUIRED = []
 
 # What packages are optional?
 EXTRAS = {
@@ -121,8 +121,10 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
-        #'Programming Language :: Python :: 3',
-        #'Programming Language :: Python :: 3.5',
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: Jython",
     ],

@@ -16,7 +16,7 @@ import re
 
 from six import iteritems, iterkeys
 
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 from neo4j.exceptions import CypherSyntaxError
 
 from cymod.cyproc import CypherFileFinder

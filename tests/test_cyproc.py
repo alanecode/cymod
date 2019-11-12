@@ -11,6 +11,8 @@ import json
 import unittest
 import warnings
 
+import six
+
 from cymod.cyproc import CypherFile, CypherFileFinder
 from cymod.cybase import CypherQuery, CypherQuerySource
 
@@ -442,20 +444,20 @@ class CypherFileFinderTestCase(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            this_fname = file_iter.next().filename
+            this_fname = six.next(file_iter).filename
             self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
 
-            this_fname = file_iter.next().filename
+            this_fname = six.next(file_iter).filename
             self.assertTrue((this_fname == f1_name) or (this_fname == f5_name))
 
-        this_fname = file_iter.next().filename
+        this_fname = six.next(file_iter).filename
         self.assertTrue((this_fname == f3_name) or (this_fname == f4_name))
 
-        this_fname = file_iter.next().filename
+        this_fname = six.next(file_iter).filename
         self.assertTrue((this_fname == f3_name) or (this_fname == f4_name))
 
-        this_fname = file_iter.next().filename
+        this_fname = six.next(file_iter).filename
         self.assertTrue(this_fname == f2_name)
 
         with self.assertRaises(StopIteration):
-            file_iter.next()
+            six.next(file_iter)

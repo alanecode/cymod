@@ -23,6 +23,8 @@ class CypherQuerySourceTestCase(unittest.TestCase):
                 "cond": ["low", "high"],
             }
         )
+        # Ensure columns are in a predictable order
+        self.demo_table = self.demo_table[["start", "end", "cond"]]
 
     def tearDown(self):
         del self.demo_table
@@ -53,9 +55,9 @@ class CypherQuerySourceTestCase(unittest.TestCase):
         s2 = CypherQuerySource(self.demo_table, "tabular", 2)
         self.assertEqual(
             str(s2),
-            "ref_type: tabular\nindex: 2\nref: "
-            "   cond     end   start\n0   low  state2  state1\n"
-            "1  high  state3  state2",
+            "ref_type: tabular\nindex: 2\nref:"
+            "     start     end  cond\n0  state1  state2   low\n"
+            "1  state2  state3  high",
         )
 
 

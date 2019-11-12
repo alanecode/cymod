@@ -4,11 +4,14 @@ Tests for cymod.load
 """
 from __future__ import print_function
 
+from functools import partial
 import shutil, tempfile
 import os
 from os import path
 import unittest
 import warnings
+
+import six
 
 import pandas as pd
 
@@ -97,15 +100,17 @@ class GraphLoaderTestCase(unittest.TestCase):
         queries = gl.iterqueries()
 
         self.assertEqual(
-            queries.next().statement, 'MERGE (n:TestNode {test_str: "test value"});'
+            six.next(queries).statement, 'MERGE (n:TestNode {test_str: "test value"});'
         )
-        self.assertEqual(queries.next().statement, "MERGE (n:TestNode {test_int: 2});")
         self.assertEqual(
-            queries.next().statement, "MERGE (n:TestNode {test_bool: true});"
+            six.next(queries).statement, "MERGE (n:TestNode {test_int: 2});"
+        )
+        self.assertEqual(
+            six.next(queries).statement, "MERGE (n:TestNode {test_bool: true});"
         )
 
         with self.assertRaises(StopIteration):
-            queries.next()
+            six.next(queries)
 
     def test_load_cypher_with_file_suffix(self):
         """Check load_cypher works when a file suffix is specified."""
@@ -120,11 +125,11 @@ class GraphLoaderTestCase(unittest.TestCase):
         queries = gl.iterqueries()
 
         self.assertEqual(
-            queries.next().statement, "MERGE (n:TestNode {test_bool: true});"
+            six.next(queries).statement, "MERGE (n:TestNode {test_bool: true});"
         )
 
         with self.assertRaises(StopIteration):
-            queries.next()
+            six.next(queries)
 
     def test_load_cypher_with_global_params(self):
         """Check load_cypher can take global params."""
@@ -138,7 +143,7 @@ class GraphLoaderTestCase(unittest.TestCase):
         )
         queries = gl.iterqueries()
 
-        this_query = queries.next()
+        this_query = six.next(queries)
         self.assertEqual(
             this_query.statement, "MERGE (n:TestNode {test_param: $paramval});"
         )
@@ -171,15 +176,17 @@ class GraphLoaderTestCase(unittest.TestCase):
         queries = gl.iterqueries()
 
         self.assertEqual(
-            queries.next().statement, "MERGE (n:TestNode {test_bool: true});"
+            six.next(queries).statement, "MERGE (n:TestNode {test_bool: true});"
         )
         self.assertEqual(
-            queries.next().statement, 'MERGE (n:TestNode {test_str: "test value"});'
+            six.next(queries).statement, 'MERGE (n:TestNode {test_str: "test value"});'
         )
-        self.assertEqual(queries.next().statement, "MERGE (n:TestNode {test_int: 2});")
+        self.assertEqual(
+            six.next(queries).statement, "MERGE (n:TestNode {test_int: 2});"
+        )
 
         with self.assertRaises(StopIteration):
-            queries.next()
+            six.next(queries)
 
     def test_global_params_specified_for_tabular(self):
         """Global params specified in load_tabular should appear in queries."""
@@ -211,9 +218,9 @@ class GraphLoaderTestCase(unittest.TestCase):
             + "-[:CAUSES]->(trans);"
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_custom_labels_applied_for_tabular(self):
         """Custom labels should be applied via load_tabular."""
@@ -241,9 +248,9 @@ class GraphLoaderTestCase(unittest.TestCase):
             + 'MERGE (cond:Condition {cond:"high"})-[:CAUSES]->(trans);'
         )
 
-        self.assertEqual(query_iter.next().statement, query1.statement)
-        self.assertEqual(query_iter.next().statement, query2.statement)
-        self.assertRaises(StopIteration, query_iter.next)
+        self.assertEqual(six.next(query_iter).statement, query1.statement)
+        self.assertEqual(six.next(query_iter).statement, query2.statement)
+        self.assertRaises(StopIteration, partial(six.next, query_iter))
 
     def test_coded_transition_table_can_be_used(self):
         trans = EnvrStateAliasTranslator()
@@ -275,7 +282,7 @@ class EmbeddedGraphLoaderTestCase(unittest.TestCase):
         egl.load_cypher(self.test_dir, global_params={"paramval": 3})
 
         query_strings = egl.query_generator()
-        self.assertEqual(query_strings.next(), "MERGE (n:TestNode {test_param: 3});")
+        self.assertEqual(six.next(query_strings), "MERGE (n:TestNode {test_param: 3});")
 
         with self.assertRaises(StopIteration):
-            query_strings.next()
+            six.next(query_strings)

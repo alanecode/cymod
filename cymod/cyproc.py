@@ -15,7 +15,7 @@ import warnings
 
 import six
 
-from cybase import CypherQuery, CypherQuerySource
+from cymod.cybase import CypherQuery, CypherQuerySource
 
 
 class CypherFile(object):
