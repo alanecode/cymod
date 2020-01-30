@@ -2,13 +2,17 @@
 *.pyc
 *~
 *#
-cymod/tmp.py
+
+# Packaging files
+build/
+dist/
 
 # editor config files
 .vscode/*
 
 # generated files
 cymod.egg-info/*
+
 #Jython compiled source files, accumulated during development and testing
 *$py.class
 
@@ -16,9 +20,6 @@ cymod.egg-info/*
 /model/.project
 /model/cymod.pdf
 /model/cymod.uml
-
-# temporary demo file
-demo.py
 
 # tox virtualenvs
 .tox/
